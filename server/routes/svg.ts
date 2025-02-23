@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { JSDOM } from 'jsdom';
-import { extractSelectedElements } from '../utils/svg';
 
 const router = Router();
 
@@ -10,7 +9,84 @@ const previewRequestSchema = z.object({
   selectedElements: z.array(z.string())
 });
 
-function calculateBoundingBox(elements: Element[]): { 
+function calculateElementBounds(element: Element): { 
+  minX: number, 
+  minY: number, 
+  maxX: number, 
+  maxY: number 
+} {
+  let minX = Infinity, minY = Infinity;
+  let maxX = -Infinity, maxY = -Infinity;
+
+  const tagName = element.tagName.toLowerCase();
+
+  switch (tagName) {
+    case 'circle': {
+      const cx = parseFloat(element.getAttribute('cx') || '0');
+      const cy = parseFloat(element.getAttribute('cy') || '0');
+      const r = parseFloat(element.getAttribute('r') || '0');
+      minX = cx - r;
+      maxX = cx + r;
+      minY = cy - r;
+      maxY = cy + r;
+      break;
+    }
+    case 'rect': {
+      const x = parseFloat(element.getAttribute('x') || '0');
+      const y = parseFloat(element.getAttribute('y') || '0');
+      const width = parseFloat(element.getAttribute('width') || '0');
+      const height = parseFloat(element.getAttribute('height') || '0');
+      minX = x;
+      maxX = x + width;
+      minY = y;
+      maxY = y + height;
+      break;
+    }
+    case 'path': {
+      const d = element.getAttribute('d') || '';
+      const numbers = d.match(/-?\d+\.?\d*/g);
+      if (numbers) {
+        numbers.forEach((num, index) => {
+          const n = parseFloat(num);
+          if (!isNaN(n)) {
+            if (index % 2 === 0) {
+              minX = Math.min(minX, n);
+              maxX = Math.max(maxX, n);
+            } else {
+              minY = Math.min(minY, n);
+              maxY = Math.max(maxY, n);
+            }
+          }
+        });
+      }
+      break;
+    }
+    default: {
+      // For other elements, check all coordinate attributes
+      ['x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy'].forEach(attr => {
+        const value = parseFloat(element.getAttribute(attr) || '0');
+        if (!isNaN(value)) {
+          if (attr.includes('x')) {
+            minX = Math.min(minX, value);
+            maxX = Math.max(maxX, value);
+          } else {
+            minY = Math.min(minY, value);
+            maxY = Math.max(maxY, value);
+          }
+        }
+      });
+    }
+  }
+
+  // If no bounds were found, use a default size
+  if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+    return { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
+function calculateGroupBounds(elements: Element[]): { 
   minX: number, 
   minY: number, 
   maxX: number, 
@@ -20,53 +96,15 @@ function calculateBoundingBox(elements: Element[]): {
   let maxX = -Infinity, maxY = -Infinity;
 
   elements.forEach(element => {
-    // Get all numeric values from attributes
-    const attributes = element.attributes;
-    for (let i = 0; i < attributes.length; i++) {
-      const value = attributes[i].value;
-      const numbers = value.match(/-?\d+\.?\d*/g);
-      if (numbers) {
-        numbers.forEach((num, index) => {
-          const n = parseFloat(num);
-          if (!isNaN(n)) {
-            // Even indices are X coordinates, odd indices are Y coordinates
-            if (index % 2 === 0) {
-              minX = Math.min(minX, n);
-              maxX = Math.max(maxX, n);
-            } else {
-              minY = Math.min(minY, n);
-              maxY = Math.max(maxY, n);
-            }
-          }
-        });
-      }
-    }
-
-    // Handle path data specially
-    if (element.tagName.toLowerCase() === 'path' && element.getAttribute('d')) {
-      const pathData = element.getAttribute('d') || '';
-      const numbers = pathData.match(/-?\d+\.?\d*/g);
-      if (numbers) {
-        numbers.forEach((num, index) => {
-          const n = parseFloat(num);
-          if (!isNaN(n)) {
-            // Even indices are X coordinates, odd indices are Y coordinates
-            if (index % 2 === 0) {
-              minX = Math.min(minX, n);
-              maxX = Math.max(maxX, n);
-            } else {
-              minY = Math.min(minY, n);
-              maxY = Math.max(maxY, n);
-            }
-          }
-        });
-      }
-    }
+    const bounds = calculateElementBounds(element);
+    minX = Math.min(minX, bounds.minX);
+    minY = Math.min(minY, bounds.minY);
+    maxX = Math.max(maxX, bounds.maxX);
+    maxY = Math.max(maxY, bounds.maxY);
   });
 
-  // If no bounds were found, use defaults
-  if (!isFinite(minX)) {
-    return { minX: 0, minY: 0, maxX: 250, maxY: 250 };
+  if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+    return { minX: 0, minY: 0, maxX: 100, maxY: 100 };
   }
 
   return { minX, minY, maxX, maxY };
@@ -89,8 +127,8 @@ router.post('/preview', async (req, res) => {
       throw new Error("No selected elements found");
     }
 
-    // Calculate original bounding box
-    const bounds = calculateBoundingBox(elements);
+    // Calculate bounds of all selected elements
+    const bounds = calculateGroupBounds(elements);
 
     // Calculate dimensions
     const width = bounds.maxX - bounds.minX;
