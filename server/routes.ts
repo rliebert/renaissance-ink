@@ -14,6 +14,13 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: 'Invalid SVG file' });
       }
 
+      // Check file size (roughly 2MB)
+      if (data.originalSvg.length > 2 * 1024 * 1024) {
+        return res.status(400).json({ 
+          message: 'SVG file is too large. Please use a simpler SVG file (max 2MB).' 
+        });
+      }
+
       const animation = await storage.createAnimation(data);
 
       try {
