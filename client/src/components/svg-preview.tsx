@@ -56,7 +56,7 @@ export function SVGPreview({
               const strokeAttrs = isSelected ? 
                 'stroke="#4299e1" stroke-width="2" stroke-opacity="1"' : '';
 
-              // Clean up existing styles
+              // Clean up existing styles and add selection style
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
@@ -67,8 +67,7 @@ export function SVGPreview({
                 isSelected && 'outline-offset: 2px'
               ].filter(Boolean).join('; ');
 
-              const result = `<${tagName} ${cleanedBeforeId} id="${id}" ${strokeAttrs} style="${styles}" data-selectable="true" ${cleanedAfterId}>`;
-
+              const result = `<${tagName} ${cleanedBeforeId} id="${id}" ${strokeAttrs} style="${styles}" ${cleanedAfterId}>`;
               console.log('Generated element:', result);
               return result;
             }
@@ -91,7 +90,17 @@ export function SVGPreview({
   const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
     let current: HTMLElement | null = element;
     while (current) {
-      if (current.getAttribute('data-selectable') === 'true') {
+      // Log the element being checked
+      console.log('Checking element:', {
+        tagName: current.tagName.toLowerCase(),
+        id: current.id,
+        attributes: Array.from(current.attributes).map(a => `${a.name}="${a.value}"`).join(', ')
+      });
+
+      // Check if this is a valid SVG element with an ID
+      if (current.id && ['path', 'circle', 'rect', 'ellipse', 'polygon', 'polyline', 'line']
+          .includes(current.tagName.toLowerCase())) {
+        console.log('Found valid SVG element:', current.id);
         return current;
       }
       current = current.parentElement;
