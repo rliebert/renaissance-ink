@@ -56,6 +56,9 @@ export function SVGPreview({
         }
       }
 
+      // Ensure the SVG preserves aspect ratio and fits within bounds
+      processedSvg = processedSvg.replace(/<svg/, '<svg preserveAspectRatio="xMidYMid meet" width="100%" height="100%"');
+
       if (selectable) {
         processedSvg = processedSvg.replace(
           /<(path|circle|rect|ellipse|polygon|polyline|line)([^>]*?)>/g,
@@ -114,9 +117,9 @@ export function SVGPreview({
       setSanitizedSvg(processedSvg);
       setError(null);
       setKey(prev => prev + 1);
-    } catch (err) {
-      console.error('SVG Processing Error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to process SVG');
+    } catch (error) {
+      console.error('SVG Processing Error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to process SVG');
       setSanitizedSvg(null);
     }
   }, [svg, selectable, selectedElements]);
@@ -144,9 +147,8 @@ export function SVGPreview({
   };
 
   const containerClass = `relative ${className}`;
-  const svgContainerClass = svgViewBox 
-    ? "w-full h-full" 
-    : "flex items-center justify-center min-h-[200px]";
+  const svgWrapperClass = "w-full h-full flex items-center justify-center p-4";
+  const svgClass = "max-w-full max-h-full w-auto h-auto";
 
   return (
     <div className="space-y-2">
@@ -161,7 +163,7 @@ export function SVGPreview({
         </div>
       )}
       <Card
-        className={`overflow-hidden ${containerClass}`}
+        className={`overflow-hidden ${containerClass} ${!className.includes('aspect-square') ? 'min-h-[300px]' : ''}`}
         onClick={handleClick}
       >
         {error ? (
@@ -169,9 +171,13 @@ export function SVGPreview({
         ) : (
           <div
             key={key}
-            className={svgContainerClass}
-            dangerouslySetInnerHTML={{ __html: sanitizedSvg || '' }}
-          />
+            className={svgWrapperClass}
+          >
+            <div 
+              className={svgClass}
+              dangerouslySetInnerHTML={{ __html: sanitizedSvg || '' }}
+            />
+          </div>
         )}
       </Card>
     </div>
