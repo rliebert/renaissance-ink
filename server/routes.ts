@@ -8,6 +8,12 @@ export async function registerRoutes(app: Express) {
   app.post("/api/animations", async (req, res) => {
     try {
       const data = insertAnimationSchema.parse(req.body);
+
+      // Validate SVG input
+      if (!data.originalSvg.includes('<svg')) {
+        return res.status(400).json({ message: 'Invalid SVG file' });
+      }
+
       const animation = await storage.createAnimation(data);
 
       try {
@@ -18,13 +24,15 @@ export async function registerRoutes(app: Express) {
         const updated = await storage.updateAnimation(animation.id, animatedSvg);
         res.json(updated);
       } catch (error: any) {
+        console.error("Animation generation error:", error);
         const updated = await storage.updateAnimationError(
           animation.id,
-          error?.message || 'Unknown error'
+          error?.message || 'Failed to generate animation'
         );
         res.status(500).json(updated);
       }
     } catch (error: any) {
+      console.error("Request processing error:", error);
       res.status(400).json({ message: error?.message || 'Invalid request' });
     }
   });

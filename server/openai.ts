@@ -4,13 +4,12 @@ if (!process.env.OPENAI_API_KEY) {
   throw new Error("Missing OPENAI_API_KEY environment variable");
 }
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function generateSvgAnimation(svg: string, description: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -25,8 +24,19 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
       max_tokens: 2000,
     });
 
-    return response.choices[0].message.content || '';
+    const generatedSvg = response.choices[0].message.content;
+    if (!generatedSvg) {
+      throw new Error("No SVG animation generated");
+    }
+
+    // Basic validation to ensure it's an SVG
+    if (!generatedSvg.includes('<svg')) {
+      throw new Error("Generated content is not a valid SVG");
+    }
+
+    return generatedSvg;
   } catch (error: any) {
+    console.error("OpenAI API Error:", error);
     throw new Error(`Failed to generate animation: ${error?.message || 'Unknown error'}`);
   }
 }
