@@ -71,12 +71,10 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
       content: msg.content
     })) || [];
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert in SVG SMIL animations. Your task is to generate animation elements for specific SVG elements.
+    const messages = [
+      {
+        role: "system",
+        content: `You are an expert in SVG SMIL animations. Your task is to generate animation elements for specific SVG elements.
 Return a JSON object with an 'animations' array containing objects with:
 - elementId: the ID of the element to animate
 - animations: array of SMIL animation strings to add to that element
@@ -99,15 +97,25 @@ Example format:
   },
   "explanation": "Brief description of the animation approach"
 }`
-        },
-        ...conversationContext,
-        {
-          role: "user",
-          content: `Create SMIL animations for these elements: ${elementsContext}
+      },
+      ...conversationContext,
+      {
+        role: "user",
+        content: `Create SMIL animations for these elements: ${elementsContext}
 Animation description: ${request.description}
 ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)}` : ''}`
-        }
-      ],
+      }
+    ];
+
+    console.log('OpenAI Request:', {
+      model: "gpt-4o",
+      messages,
+      response_format: { type: "json_object" }
+    });
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages,
       response_format: { type: "json_object" }
     });
 
@@ -116,10 +124,25 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
       throw new Error("No content received from OpenAI");
     }
 
+    console.log('OpenAI Response:', {
+      content,
+      usage: response.usage,
+      model: response.model
+    });
+
     const result = JSON.parse(content);
 
     // Insert the animations into the original SVG
     const animatedSvg = insertAnimations(request.svgContent, result.animations);
+
+    console.log('Generated Animated SVG:', {
+      originalLength: request.svgContent.length,
+      animatedLength: animatedSvg.length,
+      addedAnimations: result.animations.map(a => ({ 
+        elementId: a.elementId, 
+        numAnimations: a.animations.length 
+      }))
+    });
 
     return {
       animatedSvg,
@@ -132,6 +155,7 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
       explanation: result.explanation
     };
   } catch (error: unknown) {
+    console.error('Animation Generation Error:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate animation: ${errorMessage}`);
   }
