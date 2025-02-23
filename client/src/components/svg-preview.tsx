@@ -69,13 +69,6 @@ export function SVGPreview({
             }
           }
 
-          // Check direct attributes
-          if (element.includes('display="none"') ||
-              element.includes('opacity="0"') ||
-              (element.includes('fill="none"') && element.includes('stroke="none"'))) {
-            return true;
-          }
-
           // Check class references
           const classMatch = element.match(/class="([^"]*)"/);
           if (classMatch) {
@@ -97,86 +90,41 @@ export function SVGPreview({
           return false;
         };
 
-        // Split SVG into lines to check parent visibility
-        const lines = processedSvg.split('\n');
-        const visibilityStack: boolean[] = [true];
-        let elementCount = 0;
-        const processedLines = lines.map(line => {
-          if (line.includes('</g>')) {
-            visibilityStack.pop();
-            return line;
-          }
+        // Process SVG to make elements selectable
+        const processedLines = processedSvg.split('\n').map(line => {
+          if (isHidden(line)) return line;
 
-          if (line.includes('<g')) {
-            const parentVisible = visibilityStack[visibilityStack.length - 1];
-            const currentVisible = parentVisible && !isHidden(line);
-            visibilityStack.push(currentVisible);
-            return line;
-          }
-
-          const parentVisible = visibilityStack[visibilityStack.length - 1];
-          if (!parentVisible || isHidden(line)) {
-            return line;
-          }
-
-          // Make visible elements with IDs selectable
-          const processedLine = line.replace(
+          // Make elements with IDs selectable
+          return line.replace(
             /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
             (match, tagName, beforeId, id, afterId) => {
-              // Skip if no id attribute found
-              if (!id) {
-                console.log('Element without ID found:', match);
-                return match;
-              }
-
-              console.log('Processing element:', {
-                tagName,
-                id,
-                fullMatch: match,
-                beforeId,
-                afterId
-              });
-
-              elementCount++;
-
-              // Get existing style from either part
-              const styleRegex = /style="([^"]*)"/;
-              const existingStyle = (beforeId.match(styleRegex) || afterId.match(styleRegex))?.[1] || '';
-
-              console.log('Existing style:', existingStyle);
+              if (!id) return match;
 
               const isSelected = selectedElements.has(id);
-              console.log('Selection state:', { id, isSelected });
+              const selectionStyle = isSelected ? 'stroke: #4299e1 !important; stroke-width: 2px !important;' : '';
 
-              // Clean up any existing selection styles
-              let cleanStyle = existingStyle;
-              if (cleanStyle) {
-                cleanStyle = cleanStyle
+              // Clean up existing styles and add selection style
+              const existingStyleMatch = match.match(/style="([^"]*)"/);
+              let cleanStyle = '';
+              if (existingStyleMatch) {
+                cleanStyle = existingStyleMatch[1]
                   .replace(/cursor:\s*pointer;?\s*/g, '')
                   .replace(/stroke:\s*#4299e1;?\s*/g, '')
                   .replace(/stroke-width:\s*2px?;?\s*/g, '')
                   .trim();
               }
 
-              // Build the new style with important flags to override any existing styles
-              const selectionStyle = isSelected ? 'stroke: #4299e1 !important; stroke-width: 2px !important;' : '';
               const newStyle = `${cleanStyle}${cleanStyle ? '; ' : ''}cursor: pointer; ${selectionStyle}`.trim();
 
-              // Remove any existing style attributes
+              // Remove any existing style attribute from both parts
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
-              // Reconstruct the element with new attributes
-              const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${newStyle}" data-selectable="true" ${cleanedAfterId}>`;
-
-              console.log('Processed result:', result);
-              return result;
+              return `<${tagName} ${cleanedBeforeId} id="${id}" style="${newStyle}" data-selectable="true" ${cleanedAfterId}>`;
             }
           );
-          return processedLine;
         });
 
-        console.log(`Processed ${elementCount} selectable elements`);
         processedSvg = processedLines.join('\n');
       }
 
@@ -188,6 +136,27 @@ export function SVGPreview({
       setSanitizedSvg(null);
     }
   }, [svg, selectable, selectedElements]);
+
+  const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
+    let current: HTMLElement | null = element;
+
+    while (current) {
+      const id = current.getAttribute('id');
+      console.log('Checking element:', {
+        tagName: current.tagName,
+        id,
+        isSelectable: current.getAttribute('data-selectable')
+      });
+
+      if (id && ['path', 'circle', 'rect', 'ellipse', 'polygon', 'polyline', 'line']
+          .includes(current.tagName.toLowerCase())) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+
+    return null;
+  };
 
   const handleClick = (event: React.MouseEvent) => {
     if (!selectable || !onElementSelect) {
@@ -201,21 +170,23 @@ export function SVGPreview({
       id: target.id,
       className: target.className,
       attributes: Array.from(target.attributes).map(attr => `${attr.name}="${attr.value}"`),
-      isSelectable: target.getAttribute('data-selectable'),
       parentElement: target.parentElement ? {
         tagName: target.parentElement.tagName,
         id: target.parentElement.id
       } : null
     });
 
-    if (target.getAttribute('data-selectable') === 'true') {
-      const id = target.getAttribute('id');
-      if (id) {
-        console.log('Selecting element:', id, 'Current selection state:', selectedElements.has(id));
-        onElementSelect(id);
-      }
+    const selectableElement = findSelectableElement(target);
+    if (selectableElement) {
+      const id = selectableElement.id;
+      console.log('Found selectable element:', {
+        id,
+        tagName: selectableElement.tagName,
+        currentlySelected: selectedElements.has(id)
+      });
+      onElementSelect(id);
     } else {
-      console.log('Clicked element is not selectable');
+      console.log('No selectable element found in click path');
     }
   };
 
@@ -233,7 +204,7 @@ export function SVGPreview({
         <h3 className="font-medium text-lg">{title}</h3>
         {selectable && (
           <p className="text-sm text-muted-foreground">
-            Click on visible elements to select them for animation
+            Click on elements to select them for animation
           </p>
         )}
       </div>
