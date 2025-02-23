@@ -46,16 +46,6 @@ export function ChatInterface({
 
   return (
     <Card className="flex flex-col h-[500px]">
-      {/* Show preview at top if available */}
-      {previewSvg && (
-        <div className="p-4 border-b">
-          <SVGPreview
-            svg={previewSvg}
-            title="Selected Elements"
-          />
-        </div>
-      )}
-
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message, index) => (
@@ -94,6 +84,22 @@ export function ChatInterface({
       </ScrollArea>
 
       <div className="p-4 border-t">
+        {/* Show compact preview above input if available */}
+        {previewSvg && (
+          <div className="mb-4 p-2 border rounded-lg bg-muted">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
+              <p className="text-xs text-muted-foreground">Elements selected for animation:</p>
+            </div>
+            <div className="w-24 h-24 mx-auto">
+              <SVGPreview
+                svg={previewSvg}
+                title=""
+              />
+            </div>
+          </div>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             <FormField
