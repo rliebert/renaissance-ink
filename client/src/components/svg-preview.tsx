@@ -44,45 +44,58 @@ export function SVGPreview({
         });
 
         processedSvg = processedSvg.replace(
-          /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
-          (match, tagName, beforeId, id, afterId) => {
-            if (!id) {
-              console.log('Element without ID found:', match);
-              return match;
+          /<(path|circle|rect|ellipse|polygon|polyline|line)([^>]*?)>/g,
+          (match, tagName, attributes) => {
+            // Extract id if it exists
+            const idMatch = attributes.match(/id="([^"]+)"/);
+            if (!idMatch) {
+              return match; // Keep original if no id
             }
 
+            const id = idMatch[1];
             const isSelected = selectedElements.has(id);
-            console.log(`Processing element ${id}, selected:`, isSelected);
 
-            // Base attributes for all elements
-            const baseAttrs = [
-              'pointer-events="all"',
-              'cursor="pointer"'
-            ];
+            console.log(`Processing element ${id}:`, {
+              isSelected,
+              originalAttributes: attributes
+            });
 
-            // Selection-specific attributes
+            // Extract existing style if present
+            const styleMatch = attributes.match(/style="([^"]+)"/);
+            const existingStyles = styleMatch ? styleMatch[1] : '';
+
+            // Build new style string
+            let newStyles = existingStyles;
+            newStyles += '; pointer-events: all !important; cursor: pointer !important;';
+
             if (isSelected) {
-              baseAttrs.push(
-                'stroke="#4299e1"',
-                'stroke-width="2"',
-                'stroke-opacity="1"',
-                'fill-opacity="0.8"'
-              );
+              newStyles += `
+                ; stroke: #4299e1 !important
+                ; stroke-width: 2 !important
+                ; stroke-opacity: 1 !important
+                ; fill-opacity: 0.8 !important
+              `;
             }
 
-            // Build the element with explicit attributes
-            const elementStr = `<${tagName} ${beforeId} id="${id}" ${baseAttrs.join(' ')} ${afterId}>`;
+            // Replace or add style attribute
+            const newAttributes = styleMatch
+              ? attributes.replace(/style="[^"]+"/g, `style="${newStyles}"`)
+              : attributes + ` style="${newStyles}"`;
 
-            // For selected elements, add highlighting effects
+            const elementStr = `<${tagName}${newAttributes}>`;
+
+            // For selected elements, wrap in a group with highlight effect
             if (isSelected) {
               return `
                 <g class="selected-element-group">
-                  <${tagName} ${beforeId} ${afterId}
-                    stroke="#4299e1"
-                    stroke-width="6"
-                    stroke-opacity="0.3"
-                    fill="none"
-                    pointer-events="none"
+                  <${tagName}${attributes.replace(/style="[^"]+"/g, '')}
+                    style="
+                      pointer-events: none !important;
+                      fill: none !important;
+                      stroke: #4299e1 !important;
+                      stroke-width: 6 !important;
+                      stroke-opacity: 0.3 !important;
+                    "
                   />
                   ${elementStr}
                 </g>
@@ -94,7 +107,7 @@ export function SVGPreview({
           }
         );
 
-        console.log('Processed SVG:', processedSvg);
+        console.log('Final processed SVG length:', processedSvg.length);
       }
 
       setSanitizedSvg(processedSvg);
@@ -110,12 +123,6 @@ export function SVGPreview({
   const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
     let current: HTMLElement | null = element;
     while (current) {
-      console.log('Checking element:', {
-        tagName: current.tagName.toLowerCase(),
-        id: current.id,
-        attributes: Array.from(current.attributes).map(a => `${a.name}="${a.value}"`).join(', ')
-      });
-
       if (current.id && ['path', 'circle', 'rect', 'ellipse', 'polygon', 'polyline', 'line']
           .includes(current.tagName.toLowerCase())) {
         console.log('Found valid SVG element:', current.id);
@@ -133,7 +140,7 @@ export function SVGPreview({
     console.log('Click event details:', {
       target: target.tagName.toLowerCase(),
       id: target.id,
-      attrs: Array.from(target.attributes).map(a => `${a.name}="${a.value}"`)
+      attrs: Array.from(target.attributes)
     });
 
     const selectableElement = findSelectableElement(target);

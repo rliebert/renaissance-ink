@@ -1,0 +1,303 @@
+Click event details: {target: 'path', id: 'path22', attrs: Array(3)}
+svg-preview.tsx:113 Checking element: {tagName: 'path', id: 'path22', attributes: 'style="display:inline;opacity:1;fill:#f1c900;fill-…135,129.69223 81.583135,129.69223 Z", id="path22"'}
+svg-preview.tsx:121 Found valid SVG element: path22
+svg-preview.tsx:142 Found selectable element: {id: 'path22', currentlySelected: false}
+svg-preview.tsx:148 Selection updated: {id: 'path22', newSelectionState: true, totalSelected: 1}
+svg-preview.tsx:41 Processing SVG for selectable elements... {selectedElementsCount: 2, selectedElementsList: Array(2)}
+svg-preview.tsx:50 Element without ID found: <path
+         style="stroke-width:3.77953;-inkscape-stroke:none;paint-order:stroke fill markers"
+         d="M 66.031604,266.36057 C 66.031604,266.36057 -82.53953,0.06613514 66.031642,1.2305935e-5 214.60278,-0.06611053 66.031604,266.36057 66.031604,266.36057 Z"
+         id="path1" />
+svg-preview.tsx:55 Processing element rect3, selected: false
+svg-preview.tsx:92 Generated element: <path  id="rect3" pointer-events="all" cursor="pointer" 
+           style="fill:url(#pattern30);stroke:none;stroke-width:0.265;stroke-dasharray:none;stroke-opacity:1"
+           d="M 77.543961,54.743641 H 112.48569 V 125.2182 H 77.543961 Z" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern11);stroke:none;stroke-width:0.264655"
+           width="34.94965"
+           height="70.496635"
+           x="-107.41058"
+           y="-242.97455"
+           id="rect11"
+           transform="matrix(-0.99997625,-0.00689174,-0.02595194,-0.99966319,0,0)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern12);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="-179.05281"
+           y="-163.07762"
+           id="rect12"
+           transform="rotate(-145.02884)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern13);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="-188.53911"
+           y="-45.113319"
+           id="rect13"
+           transform="rotate(-106.44897)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern14);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="-127.15088"
+           y="45.936161"
+           id="rect14"
+           transform="rotate(-70.281903)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern16);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="-23.116276"
+           y="83.220428"
+           id="rect2"
+           transform="rotate(-33.877246)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern21);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="145.96933"
+           y="-24.918839"
+           id="rect16"
+           transform="rotate(34.595108)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern20);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="156.01556"
+           y="-131.82664"
+           id="rect17"
+           transform="rotate(69.840127)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern25);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="102.73499"
+           y="-225.41185"
+           id="rect18"
+           transform="rotate(105.42287)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern22);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="3.319207"
+           y="-270.43317"
+           id="rect21"
+           transform="rotate(141.51547)" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:none;stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="77.543961"
+           y="54.743641"
+           id="rect35" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="fill:url(#pattern37);stroke:none;stroke-width:0.264655"
+           width="34.94965"
+           height="70.496635"
+           x="-107.93986"
+           y="-242.9709"
+           id="rect36"
+           transform="matrix(-0.99997625,-0.00689174,-0.02595194,-0.99966319,0,0)" />
+svg-preview.tsx:55 Processing element rect37, selected: false
+svg-preview.tsx:92 Generated element: <path  id="rect37" pointer-events="all" cursor="pointer" 
+           style="display:inline;fill:none;stroke:none;stroke-width:0.264583"
+           d="M 95.140399,125.2182 H 77.543961 V 54.743641 54.743641 H 95.140401" />
+svg-preview.tsx:55 Processing element path37, selected: false
+svg-preview.tsx:92 Generated element: <path  id="path37" pointer-events="all" cursor="pointer" 
+           style="display:inline;fill:none;stroke:none;stroke-width:0.264583"
+           d="M 95.140401,54.743641 H 112.48569 V 125.2182 H 95.140399" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="opacity:0.87;fill:#ffff00;stroke-width:1;-inkscape-stroke:none;paint-order:stroke fill markers"
+           id="rect30"
+           width="125.84745"
+           height="133.3983"
+           x="-28.944914"
+           y="14.472458" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="opacity:0.87;fill:#ff0000;stroke-width:1;-inkscape-stroke:none;paint-order:stroke fill markers"
+           id="rect32"
+           width="125.84745"
+           height="133.3983"
+           x="96.273308"
+           y="14.472458" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="opacity:0.87;fill:#00ff00;stroke-width:1;-inkscape-stroke:none;paint-order:stroke fill markers"
+           id="rect33"
+           width="125.84745"
+           height="133.3983"
+           x="-28.944914"
+           y="147.87076" />
+svg-preview.tsx:50 Element without ID found: <rect
+           style="opacity:0.87;fill:#00ffff;stroke-width:1;-inkscape-stroke:none;paint-order:stroke fill markers"
+           id="rect34"
+           width="125.84745"
+           height="133.3983"
+           x="96.273308"
+           y="147.24153" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#f1c900;fill-opacity:0.921569;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 72.957662,141.45688 C 72.957662,141.45688 -8.4829512,156.42636 3.5909719,119.08376 15.664912,81.741149 72.957662,141.45688 72.957662,141.45688 Z"
+           id="path21" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#f1c900;fill-opacity:0.921569;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 81.583135,129.69223 C 81.583135,129.69223 7.3215094,93.060689 39.307557,70.319935 71.293626,47.579178 81.583135,129.69223 81.583135,129.69223 Z"
+           id="path22" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#00c9f1;fill-opacity:0.921569;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 117.1041,155.46338 C 117.1041,155.46338 198.49788,140.2413 186.53987,177.62117 174.58186,215.00106 117.1041,155.46338 117.1041,155.46338 Z"
+           id="path16" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#00c9f1;fill-opacity:0.921569;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 108.68209,167.32122 C 108.68209,167.32122 183.37736,203.0602 151.66613,226.18263 119.95489,249.30507 108.68209,167.32122 108.68209,167.32122 Z"
+           id="path17" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#40cc00;fill-opacity:0.921569;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 95.03987,171.77396 C 95.03987,171.77396 134.39426,244.62923 95.148258,244.65936 55.902251,244.68949 95.03987,171.77396 95.03987,171.77396 Z"
+           id="path18" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#40cc00;fill-opacity:0.921569;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 81.404933,167.35561 C 81.404933,167.35561 70.408228,249.42711 38.643152,226.37869 6.8780771,203.33026 81.404933,167.35561 81.404933,167.35561 Z"
+           id="path19" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#40cc00;fill-opacity:0.921569;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 72.919516,155.59984 C 72.919516,155.59984 15.325935,215.0947 3.460694,177.68527 -8.4045405,140.27582 72.919516,155.59984 72.919516,155.59984 Z"
+           id="path20" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="display:inline;opacity:1;fill:#f00000;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 95.017688,125.21478 C 95.017688,125.21478 55.719221,52.329319 94.965237,52.329319 134.21125,52.329319 95.017688,125.21478 95.017688,125.21478 Z"
+           id="path3" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="opacity:1;fill:#f00000;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 108.58675,129.59837 C 108.58675,129.59837 119.37342,47.498989 151.19736,70.46606 183.0213,93.433129 108.58675,129.59837 108.58675,129.59837 Z"
+           id="path14" />
+svg-preview.tsx:50 Element without ID found: <path
+           style="opacity:1;fill:#f00000;stroke:none;stroke-width:0.264999;stroke-dasharray:none;paint-order:stroke fill markers"
+           d="M 116.98874,140.98722 C 116.98874,140.98722 173.48827,80.452416 186.03344,117.63934 198.57862,154.82629 116.98874,140.98722 116.98874,140.98722 Z"
+           id="path15" />
+svg-preview.tsx:50 Element without ID found: <circle
+       style="display:none;opacity:0.53;fill:#000400;stroke-width:0.264999;paint-order:stroke fill markers"
+       id="path13"
+       cx="95.008675"
+       cy="148.49434"
+       r="23.547916" />
+svg-preview.tsx:50 Element without ID found: <circle
+       style="display:inline;opacity:1;fill:#000400;stroke-width:1;-inkscape-stroke:none;paint-order:stroke fill markers"
+       id="path2"
+       cx="95.008675"
+       cy="148.49434"
+       r="16.756327" />
+svg-preview.tsx:97 Processed SVG: <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="185.46129mm"
+   height="192.33005mm"
+   viewBox="0 0 185.46128 192.33005"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1"><pattern
+       xlink:href="#pattern11"
+       preserveAspectRatio="xMidYMid"
+       id="pattern37"
+       patternTransform="matrix(0.26464323,0,0,0.26466618,-107.93985,-242.97092)" /><pattern
+       xlink:href="#pattern3"
+       preserveAspectRatio="xMidYMid"
+       id="pattern30"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,77.543961,54.74364)" /><pattern
+       xlink:href="#pattern19"
+       preserveAspectRatio="xMidYMid"
+       id="pattern25"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,102.73497,-225.41185)" /><pattern
+       xlink:href="#pattern19"
+       preserveAspectRatio="xMidYMid"
+       id="pattern22"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,3.3191933,-270.43315)" /><pattern
+       xlink:href="#pattern17"
+       preserveAspectRatio="xMidYMid"
+       id="pattern21"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,145.96933,-24.918839)" /><pattern
+       xlink:href="#pattern18"
+       preserveAspectRatio="xMidYMid"
+       id="pattern20"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,156.01554,-131.82666)" /><pattern
+       xlink:href="#pattern18"
+       preserveAspectRatio="xMidYMid"
+       id="pattern19"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,102.23295,-227.23158)" /><pattern
+       xlink:href="#pattern17"
+       preserveAspectRatio="xMidYMid"
+       id="pattern18"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,159.42148,-114.44233)" /><pattern
+       xlink:href="#pattern3"
+       preserveAspectRatio="xMidYMid"
+       id="pattern17"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,141.92533,-16.668567)" /><pattern
+       xlink:href="#pattern2"
+       preserveAspectRatio="xMidYMid"
+       id="pattern16"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,-23.116269,83.220437)" /><pattern
+       xlink:href="#pattern2"
+       preserveAspectRatio="xMidYMid"
+       id="pattern14"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,-127.15087,45.936157)" /><pattern
+       xlink:href="#pattern2"
+       preserveAspectRatio="xMidYMid"
+       id="pattern13"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,-188.5391,-45.113319)" /><pattern
+       xlink:href="#pattern2"
+       preserveAspectRatio="xMidYMid"
+       id="pattern12"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,-179.05283,-163.07761)" /><pattern
+       xlink:href="#pattern2"
+       preserveAspectRatio="xMidYMid"
+       id="pattern11"
+       patternTransform="matrix(0.26464323,0,0,0.26466618,-107.41058,-242.97457)" /><pattern
+       xlink:href="#pattern2"
+       preserveAspectRatio="xMidYMid"
+       id="pattern3"
+       patternTransform="matrix(0.26458333,0,0,0.26458333,77.543961,54.74364)" /><pattern
+       patternUnits="userSpaceOnUse"
+       width="132.06325"
+       height="266.36057"
+       patternTransform="translate(293.07954,206.9051)"
+       preserveAspectRatio="xMidYMid"
+       id="pattern2"
+       style="fill:#000000"><path
+         style="stroke-width:3.77953;-inkscape-stroke:none;paint-order:stroke fill markers"
+         d="M 66.031604,266.36057 C 66.031604,266.36057 -82.53953,0.06613514 66.031642,1.2305935e-5 214.60278,-0.06611053 66.031604,266.36057 66.031604,266.36057 Z"
+         id="path1" /></pattern></defs><g
+     id="layer1"
+     transform="translate(-2.2780354,-52.329319)"><g
+       id="g30"
+       style="display:none;opacity:0.396"><g
+         id="g29"><path  id="rect3" pointer-events="all" cursor="pointer" 
+           style="fill:url(#pattern30);stroke:none;stroke-width:0.265;stroke-dasharray:none;stroke-opacity:1"
+           d="M 77.543961,54.743641 H 112.48569 V 125.2182 H 77.543961 Z" /><rect
+           style="fill:url(#pattern11);stroke:none;stroke-width:0.264655"
+           width="34.94965"
+           height="70.496635"
+           x="-107.41058"
+           y="-242.97455"
+           id="rect11"
+           transform="matrix(-0.99997625,-0.00689174,-0.02595194,-0.99966319,0,0)" /><rect
+           style="fill:url(#pattern12);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="-179.05281"
+           y="-163.07762"
+           id="rect12"
+           transform="rotate(-145.02884)" /><rect
+           style="fill:url(#pattern13);stroke:none;stroke-width:0.264583"
+           width="34.941734"
+           height="70.474564"
+           x="-188.53911"
+           y="-45.113319"
+           id="rect13"
+           transform="rotate(-106.44897)" /><rect
+           style="fill:url(#pattern14);stroke:none;stroke-width:0.264583"
+           width="34.941734"
