@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 export default function Home() {
   const { toast } = useToast();
   const [originalSvg, setOriginalSvg] = useState<string | null>(null);
-  
+
   const form = useForm({
     resolver: zodResolver(insertAnimationSchema),
     defaultValues: {
@@ -66,6 +66,16 @@ export default function Home() {
       return;
     }
 
+    // Add file size check
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Please use a simpler SVG file (max 2MB)",
+      });
+      return;
+    }
+
     const text = await file.text();
     setOriginalSvg(text);
     form.setValue("originalSvg", text);
@@ -85,6 +95,17 @@ export default function Home() {
           </p>
         </div>
 
+        {/* Add tips section */}
+        <div className="bg-muted p-4 rounded-lg">
+          <h2 className="text-lg font-semibold mb-2">Tips for best results:</h2>
+          <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+            <li>Use simple SVG files with clear shapes and paths</li>
+            <li>Keep file size under 2MB</li>
+            <li>Remove unnecessary elements and groups from your SVG</li>
+            <li>Provide clear animation instructions in the description</li>
+          </ul>
+        </div>
+
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-6">
             <div>
@@ -95,7 +116,7 @@ export default function Home() {
                 className="mb-4"
               />
               <Textarea
-                placeholder="Describe how you want the SVG to be animated..."
+                placeholder="Describe how you want the SVG to be animated... (e.g., 'Make the circle bounce up and down')"
                 {...form.register("description")}
                 className="min-h-[100px]"
               />
