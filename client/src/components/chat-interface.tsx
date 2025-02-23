@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Download, ExternalLink } from "lucide-react";
 import { z } from "zod";
 import type { Message } from "@shared/schema";
 import { SVGPreview } from "./svg-preview";
@@ -43,6 +43,25 @@ export function ChatInterface({
   const onSubmit = (data: MessageFormData) => {
     onSendMessage(data.content);
     form.reset();
+  };
+
+  const handleDownload = (svg: string) => {
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'animated-svg.svg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleViewInNewTab = (svg: string) => {
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (
@@ -85,7 +104,29 @@ export function ChatInterface({
                 {/* Show animated result below assistant message */}
                 {message.role === "assistant" && index === messages.length - 1 && animatedSvg && (
                   <div className="mt-4 p-2 rounded bg-background/50">
-                    <p className="text-xs mb-2 opacity-70">Generated Animation:</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs opacity-70">Generated Animation:</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleDownload(animatedSvg)}
+                          title="Download SVG"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleViewInNewTab(animatedSvg)}
+                          title="View in new tab"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                     <div className="w-full max-w-[200px] mx-auto">
                       <SVGPreview
                         svg={animatedSvg}
