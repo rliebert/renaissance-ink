@@ -38,7 +38,7 @@ export function SVGPreview({
         processedSvg = processedSvg.replace('<svg', '<svg width="100%" height="100%"');
       }
 
-      // If selectable, first remove hidden elements, then make visible ones selectable
+      // If selectable, add click handlers to visible SVG elements
       if (selectable) {
         // First, make all elements unselectable by default
         processedSvg = processedSvg.replace(
@@ -46,21 +46,9 @@ export function SVGPreview({
           match => match.replace(/data-selectable="true"/, '').replace(/ style="[^"]*"/, '')
         );
 
-        // Remove hidden groups and their contents
-        processedSvg = processedSvg.replace(
-          /<g[^>]*(?:display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>]*>[\s\S]*?<\/g>/g,
-          ''
-        );
-
-        // Remove individual hidden elements
-        processedSvg = processedSvg.replace(
-          /<(?:path|circle|rect|ellipse|polygon|polyline|line)(?:[^>]*(?:display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>]*)\/?>(?:<\/(?:path|circle|rect|ellipse|polygon|polyline|line)>)?/g,
-          ''
-        );
-
         // Then, make only visible elements selectable
         processedSvg = processedSvg.replace(
-          /<(?:path|circle|rect|ellipse|polygon|polyline|line|g)[^>]*?id="[^"]*"[^>]*>/g,
+          /<(?:path|circle|rect|ellipse|polygon|polyline|line|g)(?:[^>]*?id="[^"]*")[^>]*?(?:(?!display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>])*>/g,
           (match) => {
             // Skip if element is within a hidden group
             if (match.includes('display:none') || 
@@ -81,7 +69,7 @@ export function SVGPreview({
 
             // Preserve existing style attribute if present
             const existingStyle = match.match(/style="([^"]*)"/)?.[1] || '';
-            const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer;${isSelected ? ' outline: 2px solid #4299e1;' : ''}`;
+            const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer;${isSelected ? ' stroke: #4299e1; stroke-width: 2;' : ''}`;
 
             // Add selectable attribute and styling while preserving original attributes
             return match.replace(
@@ -89,6 +77,18 @@ export function SVGPreview({
               ` style="${combinedStyle}" data-selectable="true"$2`
             );
           }
+        );
+
+        // Remove hidden groups and their contents
+        processedSvg = processedSvg.replace(
+          /<g[^>]*(?:display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>]*>[\s\S]*?<\/g>/g,
+          ''
+        );
+
+        // Remove individual hidden elements
+        processedSvg = processedSvg.replace(
+          /<(?:path|circle|rect|ellipse|polygon|polyline|line)(?:[^>]*(?:display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>]*)\/?>(?:<\/(?:path|circle|rect|ellipse|polygon|polyline|line)>)?/g,
+          ''
         );
       }
 
