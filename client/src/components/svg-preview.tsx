@@ -43,52 +43,58 @@ export function SVGPreview({
           selectedElementsList: Array.from(selectedElements)
         });
 
-        const processedLines = processedSvg.split('\n').map(line => {
-          return line.replace(
-            /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
-            (match, tagName, beforeId, id, afterId) => {
-              if (!id) {
-                console.log('Element without ID found:', match);
-                return match;
-              }
-
-              const isSelected = selectedElements.has(id);
-              console.log(`Processing element ${id}, selected:`, isSelected);
-
-              // Remove any existing style attributes
-              let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
-              let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
-
-              // Base element with pointer events and cursor
-              const baseElement = `<${tagName} ${cleanedBeforeId} id="${id}" 
-                fill-opacity="${isSelected ? '0.8' : '1'}"
-                style="pointer-events: all; cursor: pointer;"
-                ${cleanedAfterId}>`;
-
-              if (isSelected) {
-                // Wrap selected elements in a group with highlight effects
-                return `
-                  <g class="selected-element">
-                    <${tagName} 
-                      ${cleanedBeforeId}
-                      style="pointer-events: none; fill: none; stroke: #4299e1; stroke-width: 8; stroke-opacity: 0.3;"
-                      ${cleanedAfterId}
-                    />
-                    ${baseElement}
-                    <${tagName}
-                      ${cleanedBeforeId}
-                      style="pointer-events: none; fill: none; stroke: #4299e1; stroke-width: 2; stroke-opacity: 1;"
-                      ${cleanedAfterId}
-                    />
-                  </g>`;
-              }
-
-              return baseElement;
+        processedSvg = processedSvg.replace(
+          /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
+          (match, tagName, beforeId, id, afterId) => {
+            if (!id) {
+              console.log('Element without ID found:', match);
+              return match;
             }
-          );
-        });
 
-        processedSvg = processedLines.join('\n');
+            const isSelected = selectedElements.has(id);
+            console.log(`Processing element ${id}, selected:`, isSelected);
+
+            // Base attributes for all elements
+            const baseAttrs = [
+              'pointer-events="all"',
+              'cursor="pointer"'
+            ];
+
+            // Selection-specific attributes
+            if (isSelected) {
+              baseAttrs.push(
+                'stroke="#4299e1"',
+                'stroke-width="2"',
+                'stroke-opacity="1"',
+                'fill-opacity="0.8"'
+              );
+            }
+
+            // Build the element with explicit attributes
+            const elementStr = `<${tagName} ${beforeId} id="${id}" ${baseAttrs.join(' ')} ${afterId}>`;
+
+            // For selected elements, add highlighting effects
+            if (isSelected) {
+              return `
+                <g class="selected-element-group">
+                  <${tagName} ${beforeId} ${afterId}
+                    stroke="#4299e1"
+                    stroke-width="6"
+                    stroke-opacity="0.3"
+                    fill="none"
+                    pointer-events="none"
+                  />
+                  ${elementStr}
+                </g>
+              `;
+            }
+
+            console.log('Generated element:', elementStr);
+            return elementStr;
+          }
+        );
+
+        console.log('Processed SVG:', processedSvg);
       }
 
       setSanitizedSvg(processedSvg);
@@ -139,7 +145,6 @@ export function SVGPreview({
       });
       onElementSelect(id);
 
-      // Log selection state after update
       console.log('Selection updated:', {
         id,
         newSelectionState: !selectedElements.has(id),
