@@ -18,6 +18,7 @@ export function SVGPreview({
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [sanitizedSvg, setSanitizedSvg] = useState<string | null>(null);
+  const [key, setKey] = useState(0); // Force re-render on selection changes
 
   useEffect(() => {
     if (!svg) {
@@ -43,33 +44,38 @@ export function SVGPreview({
 
         // Process SVG to make elements selectable
         const processedLines = processedSvg.split('\n').map(line => {
-          // Make elements with IDs selectable
           return line.replace(
             /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
             (match, tagName, beforeId, id, afterId) => {
               if (!id) return match;
 
               const isSelected = selectedElements.has(id);
+              console.log(`Processing element ${id}, selected: ${isSelected}`);
 
-              // Clean up existing styles and add selection style
+              // Clean up existing styles
               const existingStyleMatch = match.match(/style="([^"]*)"/);
-              let cleanStyle = '';
-              if (existingStyleMatch) {
-                cleanStyle = existingStyleMatch[1]
-                  .replace(/cursor:\s*pointer;?\s*/g, '')
-                  .replace(/stroke:\s*#4299e1;?\s*/g, '')
-                  .replace(/stroke-width:\s*2px?;?\s*/g, '')
-                  .trim();
-              }
+              let existingStyle = existingStyleMatch ? existingStyleMatch[1] : '';
 
-              const selectionStyle = isSelected ? 'stroke: #4299e1 !important; stroke-width: 2px !important;' : '';
-              const newStyle = `${cleanStyle}${cleanStyle ? '; ' : ''}cursor: pointer; ${selectionStyle}`.trim();
+              // Build enhanced selection style with important flags
+              const selectionStyles = isSelected ? `
+                stroke: #4299e1 !important;
+                stroke-width: 2px !important;
+                stroke-opacity: 1 !important;
+                pointer-events: all !important;
+                cursor: pointer !important;
+              ` : 'cursor: pointer !important;';
 
-              // Remove any existing style attribute from both parts
+              // Combine styles, ensuring selection styles take precedence
+              const combinedStyle = `${existingStyle}; ${selectionStyles}`.trim();
+
+              // Remove any existing style attributes and reconstruct element
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
-              return `<${tagName} ${cleanedBeforeId} id="${id}" style="${newStyle}" data-selectable="true" ${cleanedAfterId}>`;
+              const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${combinedStyle}" data-selectable="true" ${cleanedAfterId}>`;
+
+              console.log(`Styled element ${id}:`, result);
+              return result;
             }
           );
         });
@@ -79,12 +85,13 @@ export function SVGPreview({
 
       setSanitizedSvg(processedSvg);
       setError(null);
+      setKey(prev => prev + 1); // Force re-render when SVG changes
     } catch (err) {
       console.error('SVG Processing Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process SVG');
       setSanitizedSvg(null);
     }
-  }, [svg, selectable, selectedElements]);
+  }, [svg, selectable, selectedElements]); // Re-run when selection changes
 
   const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
     let current: HTMLElement | null = element;
@@ -134,6 +141,9 @@ export function SVGPreview({
         currentlySelected: selectedElements.has(id)
       });
       onElementSelect(id);
+
+      // Force re-render after selection
+      setKey(prev => prev + 1);
     } else {
       console.log('No selectable element found in click path');
     }
@@ -165,6 +175,7 @@ export function SVGPreview({
           <p className="text-destructive">{error}</p>
         ) : (
           <div
+            key={key} // Force re-render when selection changes
             className="w-full h-full flex items-center justify-center"
             dangerouslySetInnerHTML={{ __html: sanitizedSvg || '' }}
           />
