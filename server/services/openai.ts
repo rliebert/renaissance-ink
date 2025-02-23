@@ -8,6 +8,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 interface AnimationRequest {
   svgContent: string;
   selectedElements: string[];
+  referenceElements?: string[];  // Added referenceElements
   description: string;
   parameters?: Partial<AnimationParams>;
   conversation?: Message[];
@@ -54,16 +55,34 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
   return document.querySelector('svg')?.outerHTML || '';
 }
 
+// Helper function to get element details
+function getElementDetails(document: Document, id: string): string {
+  const element = document.getElementById(id);
+  if (!element) return id;
+
+  const tag = element.tagName.toLowerCase();
+  const x = element.getAttribute('x') || element.getAttribute('cx') || '0';
+  const y = element.getAttribute('y') || element.getAttribute('cy') || '0';
+
+  return `#${id} (${tag} at x=${x}, y=${y})`;
+}
+
 export async function generateAnimation(request: AnimationRequest): Promise<AnimationResponse> {
   try {
-    // Create a focused prompt that describes the elements to animate
-    const elementsContext = request.selectedElements
-      .map(id => {
-        const dom = new JSDOM(request.svgContent);
-        const element = dom.window.document.getElementById(id);
-        return element ? `#${id} (${element.tagName.toLowerCase()})` : `#${id}`;
-      })
+    const dom = new JSDOM(request.svgContent);
+    const document = dom.window.document;
+
+    // Create detailed context for elements
+    const elementsToAnimate = request.selectedElements
+      .map(id => getElementDetails(document, id))
       .join(', ');
+
+    // Create context for reference elements
+    const referenceContext = request.referenceElements?.length
+      ? `Reference elements that should NOT be animated: ${
+          request.referenceElements.map(id => getElementDetails(document, id)).join(', ')
+        }`
+      : '';
 
     // Include previous conversation context
     const conversationContext = request.conversation?.map(msg => ({
@@ -75,9 +94,18 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
       {
         role: "system",
         content: `You are an expert in SVG SMIL animations. Your task is to generate animation elements for specific SVG elements.
+${referenceContext}
+
 Return a JSON object with an 'animations' array containing objects with:
 - elementId: the ID of the element to animate
 - animations: array of SMIL animation strings to add to that element
+
+IMPORTANT RULES:
+1. ONLY generate animations for the explicitly listed elements to animate
+2. DO NOT modify or animate any reference elements
+3. Use the reference elements' positions and attributes as spatial anchors
+4. Keep the reference elements completely static
+
 Example format:
 {
   "animations": [
@@ -101,7 +129,7 @@ Example format:
       ...conversationContext,
       {
         role: "user",
-        content: `Create SMIL animations for these elements: ${elementsContext}
+        content: `Create SMIL animations for these elements: ${elementsToAnimate}
 Animation description: ${request.description}
 ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)}` : ''}`
       }
@@ -115,7 +143,7 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages,
+      messages: messages as any, // Type assertion needed due to OpenAI types
       response_format: { type: "json_object" }
     });
 
@@ -131,6 +159,16 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
     });
 
     const result = JSON.parse(content);
+
+    // Validate that no reference elements are being animated
+    if (request.referenceElements?.length) {
+      const attemptedReferenceAnimations = result.animations
+        .filter(a => request.referenceElements?.includes(a.elementId));
+
+      if (attemptedReferenceAnimations.length > 0) {
+        throw new Error("Animation attempt on reference elements detected");
+      }
+    }
 
     // Insert the animations into the original SVG
     const animatedSvg = insertAnimations(request.svgContent, result.animations);
