@@ -19,34 +19,66 @@ function cleanupSvg(svg: string): string {
   return svg.trim();
 }
 
-function validateSvgStructure(svg: string): string {
-  // Ensure XML declaration is present
-  if (!svg.startsWith('<?xml')) {
-    svg = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + svg;
+function validateSvgStructure(svg: string, originalSvg: string): string {
+  // Ensure XML declaration is present and matches original
+  const xmlDeclaration = originalSvg.match(/<\?xml[^>]*\?>/)?.[0];
+  if (xmlDeclaration && !svg.startsWith(xmlDeclaration)) {
+    svg = xmlDeclaration + '\n' + svg.replace(/<\?xml[^>]*\?>/, '');
   }
 
-  // Extract SVG tag with all its attributes
-  const svgTagMatch = svg.match(/<svg[^>]*>/);
-  if (!svgTagMatch) {
+  // Extract SVG tag with all its attributes from both SVGs
+  const originalSvgTag = originalSvg.match(/<svg[^>]*>/)?.[0];
+  const newSvgTag = svg.match(/<svg[^>]*>/)?.[0];
+
+  if (!originalSvgTag || !newSvgTag) {
     throw new Error("Invalid SVG: missing svg tag");
   }
 
-  // Ensure all namespaces are present
-  const svgTag = svgTagMatch[0];
-  const requiredNamespaces = [
-    'xmlns="http://www.w3.org/2000/svg"',
-    'xmlns:svg="http://www.w3.org/2000/svg"',
-    'xmlns:xlink="http://www.w3.org/1999/xlink"'
-  ];
+  // Preserve original SVG attributes while keeping any new animation-related attributes
+  const originalAttrs = Object.fromEntries(
+    [...originalSvgTag.matchAll(/(\w+:?\w+)="([^"]*)"/g)].map(m => [m[1], m[2]])
+  );
+  const newAttrs = Object.fromEntries(
+    [...newSvgTag.matchAll(/(\w+:?\w+)="([^"]*)"/g)].map(m => [m[1], m[2]])
+  );
 
-  let updatedSvgTag = svgTag;
-  for (const ns of requiredNamespaces) {
-    if (!updatedSvgTag.includes(ns.split('=')[0] + '=')) {
-      updatedSvgTag = updatedSvgTag.replace('>', ` ${ns}>`);
-    }
+  // Merge attributes, prioritizing original attributes except for animation-related ones
+  const mergedAttrs = { ...newAttrs, ...originalAttrs };
+
+  // Reconstruct SVG tag
+  const mergedSvgTag = '<svg ' + Object.entries(mergedAttrs)
+    .map(([key, value]) => `${key}="${value}"`)
+    .join(' ') + '>';
+
+  // Replace SVG tag
+  svg = svg.replace(/<svg[^>]*>/, mergedSvgTag);
+
+  // Ensure SVG has proper closing tag
+  if (!svg.endsWith('</svg>')) {
+    svg += '</svg>';
   }
 
-  return svg.replace(svgTag, updatedSvgTag);
+  return svg;
+}
+
+function verifyCompleteSvg(svg: string): boolean {
+  // Check for well-formed XML structure
+  const hasXmlDeclaration = /<\?xml[^>]*\?>/.test(svg);
+  const hasOpeningSvgTag = /<svg[^>]*>/.test(svg);
+  const hasClosingSvgTag = /<\/svg>/.test(svg);
+
+  // Check for balanced tags
+  const openTags = svg.match(/<[^/][^>]*>/g) || [];
+  const closeTags = svg.match(/<\/[^>]+>/g) || [];
+
+  // Count only unique tags (excluding self-closing)
+  const openCount = openTags.filter(tag => !tag.endsWith('/>'));
+  const closeCount = closeTags.length;
+
+  return hasXmlDeclaration && 
+         hasOpeningSvgTag && 
+         hasClosingSvgTag && 
+         openCount.length === closeCount;
 }
 
 export async function generateSvgAnimation(svg: string, description: string): Promise<string> {
@@ -77,7 +109,8 @@ CRITICAL REQUIREMENTS:
 5. Only add animation elements (<animate>, <animateTransform>, etc.) to existing paths
 6. Keep ALL original IDs, classes, and styles
 7. Ensure the SVG structure matches the original EXACTLY
-8. No markdown, no code blocks, no explanations - just pure SVG code`
+8. No markdown, no code blocks, no explanations - just pure SVG code
+9. Do NOT truncate or omit any parts of the SVG`
         },
         {
           role: "user",
@@ -85,11 +118,11 @@ CRITICAL REQUIREMENTS:
 
 ${cleanedSvg}
 
-Return the complete SVG with ALL original elements and added animations.`
+Return the complete SVG with ALL original elements and added animations. Do not truncate or omit any content.`
         }
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 4000,
     });
 
     const generatedSvg = response.choices[0].message.content;
@@ -97,17 +130,17 @@ Return the complete SVG with ALL original elements and added animations.`
       throw new Error("No SVG animation generated");
     }
 
-    // Basic validation
-    if (!generatedSvg.includes('<svg')) {
-      throw new Error("Generated content is not a valid SVG");
-    }
-
     // Extract just the SVG if it's wrapped in any markdown
     const svgMatch = generatedSvg.match(/<\?xml[\s\S]*<\/svg>/);
     const cleanGeneratedSvg = svgMatch ? svgMatch[0] : generatedSvg;
 
-    // Validate and fix SVG structure
-    const validatedSvg = validateSvgStructure(cleanGeneratedSvg);
+    // Verify the SVG is complete
+    if (!verifyCompleteSvg(cleanGeneratedSvg)) {
+      throw new Error("Generated SVG is incomplete or malformed");
+    }
+
+    // Validate and fix SVG structure while preserving original attributes
+    const validatedSvg = validateSvgStructure(cleanGeneratedSvg, svg);
 
     return validatedSvg;
   } catch (error: any) {
