@@ -19,6 +19,89 @@ function cleanupSvg(svg: string): string {
   return svg.trim();
 }
 
+function mergeSvgContent(originalSvg: string, animatedSvg: string): string {
+  try {
+    // Extract all paths from original SVG
+    const originalPaths: { [key: string]: string } = {};
+    const pathMatches = originalSvg.matchAll(/<path[^>]*id="([^"]*)"[^>]*>/g);
+    for (const match of pathMatches) {
+      originalPaths[match[1]] = match[0];
+    }
+
+    // Replace omitted content in animated SVG
+    let mergedSvg = animatedSvg;
+
+    // Handle omitted paths comment
+    mergedSvg = mergedSvg.replace(
+      /<!-- ?(?:Other )?paths omitted for brevity ?-->/g,
+      (match, offset) => {
+        // Find the closest parent g element
+        const beforeComment = mergedSvg.slice(0, offset);
+        const gStart = beforeComment.lastIndexOf('<g');
+        const gEnd = mergedSvg.indexOf('</g>', offset);
+
+        if (gStart === -1 || gEnd === -1) return '';
+
+        // Get the g element's content
+        const gContent = mergedSvg.slice(gStart, gEnd);
+
+        // Find paths that are already included
+        const includedPaths = new Set<string>();
+        const pathRegex = /id="([^"]*)"/g;
+        let pathMatch;
+        while ((pathMatch = pathRegex.exec(gContent)) !== null) {
+          includedPaths.add(pathMatch[1]);
+        }
+
+        // Add missing paths from original
+        const missingPaths = Object.entries(originalPaths)
+          .filter(([id]) => !includedPaths.has(id))
+          .map(([, path]) => path)
+          .join('\n');
+
+        return missingPaths;
+      }
+    );
+
+    // Handle other omitted content
+    mergedSvg = mergedSvg.replace(
+      /<!--[\s\S]*?-->/g,
+      (comment) => {
+        if (comment.includes('omitted')) {
+          // Try to find corresponding content in original SVG
+          const beforeComment = mergedSvg.slice(0, mergedSvg.indexOf(comment));
+          const afterComment = mergedSvg.slice(mergedSvg.indexOf(comment) + comment.length);
+
+          // Use the surrounding tags to find the corresponding section in the original
+          const lastOpenTag = beforeComment.match(/<[^/][^>]*>(?!.*<[^/][^>]*>)/)?.[0] || '';
+          const nextCloseTag = afterComment.match(/^[^<]*<\/[^>]+>/)?.[0] || '';
+
+          if (lastOpenTag && nextCloseTag) {
+            const tagName = lastOpenTag.match(/<([^ >]+)/)?.[1];
+            if (tagName) {
+              const pattern = new RegExp(
+                `${escapeRegExp(lastOpenTag)}([\\s\\S]*?)${escapeRegExp(nextCloseTag)}`
+              );
+              const originalContent = originalSvg.match(pattern)?.[1] || '';
+              return originalContent;
+            }
+          }
+        }
+        return comment;
+      }
+    );
+
+    return mergedSvg;
+  } catch (error) {
+    console.error('Error merging SVG content:', error);
+    return animatedSvg; // Return the animated SVG as-is if merging fails
+  }
+}
+
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function generateSvgAnimation(svg: string, description: string): Promise<string> {
   try {
     // Clean up SVG before processing
@@ -56,7 +139,10 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
       throw new Error("Generated content is not a valid SVG");
     }
 
-    return generatedSvg;
+    // Merge the generated SVG with the original to fill in any omitted content
+    const mergedSvg = mergeSvgContent(svg, generatedSvg);
+
+    return mergedSvg;
   } catch (error: any) {
     console.error("OpenAI API Error:", error);
     throw new Error(`Failed to generate animation: ${error?.message || 'Unknown error'}`);
