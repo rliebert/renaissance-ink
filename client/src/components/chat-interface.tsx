@@ -22,13 +22,15 @@ interface ChatInterfaceProps {
   onSendMessage: (content: string) => void;
   isLoading?: boolean;
   animatedSvg?: string | null;
+  previewSvg?: string | null;
 }
 
 export function ChatInterface({ 
   messages, 
   onSendMessage, 
   isLoading = false,
-  animatedSvg 
+  animatedSvg,
+  previewSvg 
 }: ChatInterfaceProps) {
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
@@ -44,6 +46,16 @@ export function ChatInterface({
 
   return (
     <Card className="flex flex-col h-[500px]">
+      {/* Show preview at top if available */}
+      {previewSvg && (
+        <div className="p-4 border-b">
+          <SVGPreview
+            svg={previewSvg}
+            title="Selected Elements"
+          />
+        </div>
+      )}
+
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message, index) => (

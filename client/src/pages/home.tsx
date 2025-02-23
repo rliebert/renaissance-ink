@@ -186,9 +186,9 @@ export default function Home() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-8">
-            <SVGPreview 
-              svg={originalSvg} 
-              title="Original SVG" 
+            <SVGPreview
+              svg={originalSvg}
+              title="Original SVG"
               selectable={true}
               onElementSelect={handleElementSelect}
               selectedElements={selectedElements}
@@ -206,6 +206,7 @@ export default function Home() {
             onSendMessage={handleSendMessage}
             isLoading={mutation.isPending}
             animatedSvg={mutation.data?.animatedSvg}
+            previewSvg={previewQuery.data}
           />
         </div>
       </div>
