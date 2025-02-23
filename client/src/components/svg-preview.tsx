@@ -38,7 +38,10 @@ export function SVGPreview({
       }
 
       if (selectable) {
-        console.log('Processing SVG for selectable elements...');
+        console.log('Processing SVG for selectable elements...', {
+          selectedElementsCount: selectedElements.size,
+          selectedElementsList: Array.from(selectedElements)
+        });
 
         const processedLines = processedSvg.split('\n').map(line => {
           return line.replace(
@@ -52,18 +55,18 @@ export function SVGPreview({
               const isSelected = selectedElements.has(id);
               console.log(`Processing element ${id}, selected:`, isSelected);
 
+              // Clean up existing styles
+              let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
+              let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
+
               // Add selection styles that combine both stroke and outline for better visibility
               const selectionStyles = isSelected ? 
                 `stroke: #4299e1 !important; 
                  stroke-width: 2px !important; 
-                 stroke-opacity: 1 !important; 
+                 stroke-opacity: 1 !important;
                  filter: drop-shadow(0 0 2px #4299e1) !important;
                  pointer-events: all !important;` 
                 : '';
-
-              // Clean up existing styles
-              let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
-              let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
               // Build the style attribute with cursor and selection styles
               const styles = `pointer-events: all; cursor: pointer !important; ${selectionStyles}`.trim();
@@ -84,13 +87,14 @@ export function SVGPreview({
 
       setSanitizedSvg(processedSvg);
       setError(null);
+      // Force re-render after processing
       setKey(prev => prev + 1);
     } catch (err) {
       console.error('SVG Processing Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process SVG');
       setSanitizedSvg(null);
     }
-  }, [svg, selectable, selectedElements]);
+  }, [svg, selectable, selectedElements]); // Re-run when selectedElements changes
 
   const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
     let current: HTMLElement | null = element;
@@ -129,7 +133,16 @@ export function SVGPreview({
         currentlySelected: selectedElements.has(id)
       });
       onElementSelect(id);
+
+      // Force immediate re-render after selection
       setKey(prev => prev + 1);
+
+      // Log selection state after update
+      console.log('Selection updated:', {
+        id,
+        newSelectionState: !selectedElements.has(id),
+        totalSelected: selectedElements.size
+      });
     } else {
       console.log('No selectable element found');
     }
