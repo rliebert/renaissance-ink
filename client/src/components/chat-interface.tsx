@@ -46,13 +46,6 @@ export function ChatInterface({
   };
 
   const handleDownload = (svg: string) => {
-    console.log('Downloading SVG:', {
-      length: svg.length,
-      containsAnimate: svg.includes('<animate'),
-      containsAnimateTransform: svg.includes('<animateTransform'),
-      preview: svg.substring(0, 200) + '...'
-    });
-
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -65,13 +58,6 @@ export function ChatInterface({
   };
 
   const handleViewInNewTab = (svg: string) => {
-    console.log('Opening SVG in new tab:', {
-      length: svg.length,
-      containsAnimate: svg.includes('<animate'),
-      containsAnimateTransform: svg.includes('<animateTransform'),
-      preview: svg.substring(0, 200) + '...'
-    });
-
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
