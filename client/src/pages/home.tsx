@@ -157,24 +157,19 @@ export default function Home() {
         />
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <div className="space-y-8">
-            <SVGPreview 
-              svg={originalSvg} 
-              title="Original SVG" 
-              selectable={true}
-              onElementSelect={handleElementSelect}
-              selectedElements={selectedElements}
-            />
-            <SVGPreview
-              svg={mutation.data?.animatedSvg || null}
-              title="Animated Preview"
-            />
-          </div>
+          <SVGPreview 
+            svg={originalSvg} 
+            title="Original SVG" 
+            selectable={true}
+            onElementSelect={handleElementSelect}
+            selectedElements={selectedElements}
+          />
 
           <ChatInterface
             messages={conversation}
             onSendMessage={handleSendMessage}
             isLoading={mutation.isPending}
+            animatedSvg={mutation.data?.animatedSvg}
           />
         </div>
       </div>

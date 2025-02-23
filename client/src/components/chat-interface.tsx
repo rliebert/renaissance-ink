@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import type { Message } from "@shared/schema";
+import { SVGPreview } from "./svg-preview";
 
 const messageSchema = z.object({
   content: z.string().min(1, "Please enter a message"),
@@ -20,9 +21,15 @@ interface ChatInterfaceProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   isLoading?: boolean;
+  animatedSvg?: string | null;
 }
 
-export function ChatInterface({ messages, onSendMessage, isLoading = false }: ChatInterfaceProps) {
+export function ChatInterface({ 
+  messages, 
+  onSendMessage, 
+  isLoading = false,
+  animatedSvg 
+}: ChatInterfaceProps) {
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
@@ -60,6 +67,17 @@ export function ChatInterface({ messages, onSendMessage, isLoading = false }: Ch
               </div>
             </div>
           ))}
+          {/* Show animation preview after the last assistant message */}
+          {animatedSvg && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
+            <div className="flex justify-start">
+              <div className="rounded-lg p-4 bg-muted max-w-[80%]">
+                <SVGPreview
+                  svg={animatedSvg}
+                  title="Generated Animation"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
 
