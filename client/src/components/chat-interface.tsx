@@ -95,6 +95,7 @@ export function ChatInterface({
               <SVGPreview
                 svg={previewSvg}
                 title=""
+                className="aspect-square"
               />
             </div>
           </div>
