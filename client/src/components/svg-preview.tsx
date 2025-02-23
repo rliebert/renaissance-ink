@@ -55,43 +55,35 @@ export function SVGPreview({
               const isSelected = selectedElements.has(id);
               console.log(`Processing element ${id}, selected:`, isSelected);
 
-              // Clean up existing styles
+              // Remove any existing style attributes
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
-              // Build the selection styles - use direct SVG attributes for better visibility
-              let styles = `pointer-events: all; cursor: pointer;`;
+              // Base element with pointer events and cursor
+              const baseElement = `<${tagName} ${cleanedBeforeId} id="${id}" 
+                fill-opacity="${isSelected ? '0.8' : '1'}"
+                style="pointer-events: all; cursor: pointer;"
+                ${cleanedAfterId}>`;
 
-              // If selected, add strong visual feedback
               if (isSelected) {
-                // Add a glowing effect using SVG specific attributes
-                styles += `
-                  stroke: #4299e1;
-                  stroke-width: 3;
-                  stroke-opacity: 1;
-                  fill-opacity: 0.9;
-                `;
-              }
-
-              const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${styles}" ${cleanedAfterId}>`;
-
-              // If selected, add a duplicate element for highlight effect
-              if (isSelected) {
+                // Wrap selected elements in a group with highlight effects
                 return `
-                  <g>
-                    ${result}
-                    <${tagName} ${cleanedBeforeId} style="
-                      pointer-events: none;
-                      fill: none;
-                      stroke: #4299e1;
-                      stroke-width: 5;
-                      stroke-opacity: 0.3;
-                    " ${cleanedAfterId}>
-                  </g>
-                `;
+                  <g class="selected-element">
+                    <${tagName} 
+                      ${cleanedBeforeId}
+                      style="pointer-events: none; fill: none; stroke: #4299e1; stroke-width: 8; stroke-opacity: 0.3;"
+                      ${cleanedAfterId}
+                    />
+                    ${baseElement}
+                    <${tagName}
+                      ${cleanedBeforeId}
+                      style="pointer-events: none; fill: none; stroke: #4299e1; stroke-width: 2; stroke-opacity: 1;"
+                      ${cleanedAfterId}
+                    />
+                  </g>`;
               }
 
-              return result;
+              return baseElement;
             }
           );
         });
@@ -133,7 +125,7 @@ export function SVGPreview({
 
     const target = event.target as HTMLElement;
     console.log('Click event details:', {
-      target: target.tagName,
+      target: target.tagName.toLowerCase(),
       id: target.id,
       attrs: Array.from(target.attributes).map(a => `${a.name}="${a.value}"`)
     });
@@ -146,9 +138,6 @@ export function SVGPreview({
         currentlySelected: selectedElements.has(id)
       });
       onElementSelect(id);
-
-      // Force immediate re-render after selection
-      setKey(prev => prev + 1);
 
       // Log selection state after update
       console.log('Selection updated:', {
