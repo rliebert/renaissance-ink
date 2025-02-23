@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { insertAnimationSchema, type Animation, type Message } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Form } from "@/components/ui/form";
@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { SVGPreview } from "@/components/svg-preview";
 import { ChatInterface } from "@/components/chat-interface";
 import { Loader2 } from "lucide-react";
-import { extractSelectedElements } from "@shared/utils";
 
 export default function Home() {
   const { toast } = useToast();
@@ -25,6 +24,24 @@ export default function Home() {
       originalSvg: "",
       description: "",
     },
+  });
+
+  // Query for selected elements preview
+  const previewQuery = useQuery({
+    queryKey: ['svg-preview', originalSvg, Array.from(selectedElements)],
+    queryFn: async () => {
+      if (!originalSvg || selectedElements.size === 0) return null;
+      const response = await apiRequest("POST", "/api/svg/preview", {
+        svgContent: originalSvg,
+        selectedElements: Array.from(selectedElements)
+      });
+      if (!response.ok) {
+        throw new Error('Failed to generate preview');
+      }
+      const data = await response.json();
+      return data.preview as string;
+    },
+    enabled: !!originalSvg && selectedElements.size > 0
   });
 
   const mutation = useMutation({
@@ -41,7 +58,6 @@ export default function Home() {
       return response.json() as Promise<Animation>;
     },
     onSuccess: (data) => {
-      // Add success message with explanation to conversation
       setConversation(prev => [...prev,
         {
           role: "user",
@@ -141,11 +157,6 @@ export default function Home() {
     }
   };
 
-  // Get preview of selected elements
-  const selectedElementsPreview = originalSvg && selectedElements.size > 0
-    ? extractSelectedElements(originalSvg, Array.from(selectedElements))
-    : null;
-
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="space-y-8">
@@ -182,9 +193,9 @@ export default function Home() {
               onElementSelect={handleElementSelect}
               selectedElements={selectedElements}
             />
-            {selectedElementsPreview && (
+            {previewQuery.data && (
               <SVGPreview
-                svg={selectedElementsPreview}
+                svg={previewQuery.data}
                 title="Selected Elements Preview"
               />
             )}

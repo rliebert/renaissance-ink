@@ -1,14 +1,18 @@
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
-import { neon } from '@neondatabase/serverless';
-import { animations } from '@shared/schema';
+import ws from "ws";
+import * as schema from "@shared/schema";
 
-// Initialize neon client
-const sql = neon(process.env.DATABASE_URL!);
+neonConfig.webSocketConstructor = ws;
 
-// Initialize drizzle with neon client
-export const db = drizzle(sql);
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
+}
+
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const db = drizzle(pool, { schema });
 
 // Export tables for convenience
-export const tables = {
-  animations,
-};
+export const animations = schema.animations;

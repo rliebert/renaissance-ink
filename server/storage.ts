@@ -18,11 +18,18 @@ export class MemStorage implements IStorage {
 
   async createAnimation(insertAnimation: InsertAnimation): Promise<Animation> {
     const id = this.currentId++;
+    const now = new Date();
     const animation: Animation = {
       ...insertAnimation,
       id,
       animatedSvg: null,
       error: null,
+      selectedElements: insertAnimation.selectedElements || null,
+      parameters: insertAnimation.parameters || null,
+      conversation: [],
+      explanation: null,
+      createdAt: now,
+      updatedAt: now
     };
     this.animations.set(id, animation);
     return animation;
@@ -35,8 +42,13 @@ export class MemStorage implements IStorage {
   async updateAnimation(id: number, animatedSvg: string): Promise<Animation> {
     const animation = this.animations.get(id);
     if (!animation) throw new Error("Animation not found");
-    
-    const updated = { ...animation, animatedSvg, error: null };
+
+    const updated = { 
+      ...animation, 
+      animatedSvg, 
+      error: null,
+      updatedAt: new Date()
+    };
     this.animations.set(id, updated);
     return updated;
   }
@@ -44,8 +56,13 @@ export class MemStorage implements IStorage {
   async updateAnimationError(id: number, error: string): Promise<Animation> {
     const animation = this.animations.get(id);
     if (!animation) throw new Error("Animation not found");
-    
-    const updated = { ...animation, error, animatedSvg: null };
+
+    const updated = { 
+      ...animation, 
+      error, 
+      animatedSvg: null,
+      updatedAt: new Date()
+    };
     this.animations.set(id, updated);
     return updated;
   }

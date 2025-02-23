@@ -1,29 +1,15 @@
 import { JSDOM } from 'jsdom';
 
-// Server-side only utility
 export function extractSelectedElements(svgContent: string, elementIds: string[]): string {
   try {
-    console.log('Extracting selected elements:', {
-      numElements: elementIds.length,
-      elementIds,
-      contentLength: svgContent.length
-    });
-
     const dom = new JSDOM(svgContent);
     const document = dom.window.document;
 
     // Extract viewBox and other necessary attributes from original SVG
     const originalSvg = document.querySelector('svg');
     if (!originalSvg) {
-      console.error('No SVG element found in content');
       throw new Error("Invalid SVG: no svg element found");
     }
-
-    console.log('Original SVG attributes:', {
-      viewBox: originalSvg.getAttribute('viewBox'),
-      width: originalSvg.getAttribute('width'),
-      height: originalSvg.getAttribute('height')
-    });
 
     // Create a new minimal SVG with only selected elements
     const minimalSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -35,17 +21,9 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
     });
 
     // Copy selected elements
-    let elementsFound = 0;
     for (const id of elementIds) {
       const element = document.getElementById(id);
       if (element) {
-        elementsFound++;
-        console.log(`Copying element #${id}:`, {
-          tagName: element.tagName,
-          attributes: Array.from(element.attributes).map(a => `${a.name}="${a.value}"`).join(' ')
-        });
-
-        // Deep clone the element
         const clone = element.cloneNode(true) as Element;
 
         // Ensure all child elements have proper SVG namespace
@@ -64,19 +42,10 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
         }
 
         minimalSvg.appendChild(clone);
-      } else {
-        console.warn(`Element #${id} not found`);
       }
     }
 
-    console.log('Preview generation complete:', {
-      elementsFound,
-      totalElements: elementIds.length
-    });
-
-    const result = minimalSvg.outerHTML;
-    console.log('Generated preview SVG length:', result.length);
-    return result;
+    return minimalSvg.outerHTML;
   } catch (error) {
     console.error('Error extracting selected elements:', error);
     return '<svg xmlns="http://www.w3.org/2000/svg"></svg>'; // Return empty SVG on error
