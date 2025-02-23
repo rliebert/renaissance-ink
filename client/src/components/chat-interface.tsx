@@ -6,10 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { z } from "zod";
 import type { Message } from "@shared/schema";
 import { SVGPreview } from "./svg-preview";
+import { LoadingIndicator } from "./loading-indicator";
 
 const messageSchema = z.object({
   content: z.string().min(1, "Please enter a message"),
@@ -25,12 +26,12 @@ interface ChatInterfaceProps {
   previewSvg?: string | null;
 }
 
-export function ChatInterface({ 
-  messages, 
-  onSendMessage, 
+export function ChatInterface({
+  messages,
+  onSendMessage,
   isLoading = false,
   animatedSvg,
-  previewSvg 
+  previewSvg
 }: ChatInterfaceProps) {
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
@@ -106,8 +107,8 @@ export function ChatInterface({
           {isLoading && (
             <div className="flex justify-start">
               <div className="rounded-lg px-4 py-2 bg-muted">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex items-center gap-4">
+                  <LoadingIndicator />
                   <p className="text-sm">Generating animation...</p>
                 </div>
               </div>
