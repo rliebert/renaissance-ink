@@ -46,50 +46,99 @@ export function SVGPreview({
           match => match.replace(/data-selectable="true"/, '').replace(/ style="[^"]*"/, '')
         );
 
-        // Then, make only visible elements selectable
-        processedSvg = processedSvg.replace(
-          /<(?:path|circle|rect|ellipse|polygon|polyline|line|g)(?:[^>]*?id="[^"]*")[^>]*?(?:(?!display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>])*>/g,
-          (match) => {
-            // Skip if element is within a hidden group
-            if (match.includes('display:none') || 
-                match.includes('visibility:hidden') || 
-                match.includes('opacity:0') ||
-                match.includes('display="none"') || 
-                match.includes('visibility="hidden"') || 
-                match.includes('opacity="0"')) {
-              return match;
+        // Extract style definitions
+        const styleMatch = processedSvg.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+        const styleDefinitions: Record<string, string> = {};
+        if (styleMatch) {
+          const styleContent = styleMatch[1];
+          const styleRules = styleContent.match(/\.[^{]+{[^}]+}/g) || [];
+          styleRules.forEach(rule => {
+            const [selector, styles] = rule.split('{');
+            styleDefinitions[selector.trim().slice(1)] = styles.slice(0, -1).trim();
+          });
+        }
+
+        // Function to check if an element or its parent is hidden
+        const isHidden = (element: string): boolean => {
+          // Check inline styles
+          const styleMatch = element.match(/style="([^"]*)"/);
+          if (styleMatch) {
+            const style = styleMatch[1];
+            if (style.includes('display:none') || 
+                style.includes('display: none') ||
+                /opacity:\s*0(?:\.0+)?/.test(style) ||
+                (style.includes('fill:none') && style.includes('stroke:none')) ||
+                (style.includes('fill: none') && style.includes('stroke: none'))) {
+              return true;
             }
-
-            // Extract id if present
-            const idMatch = match.match(/id="([^"]*)"/);
-            if (!idMatch) return match;
-
-            const id = idMatch[1];
-            const isSelected = selectedElements.has(id);
-
-            // Preserve existing style attribute if present
-            const existingStyle = match.match(/style="([^"]*)"/)?.[1] || '';
-            const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer;${isSelected ? ' stroke: #4299e1; stroke-width: 2;' : ''}`;
-
-            // Add selectable attribute and styling while preserving original attributes
-            return match.replace(
-              /(\s*)(\/?>|>)$/,
-              ` style="${combinedStyle}" data-selectable="true"$2`
-            );
           }
-        );
 
-        // Remove hidden groups and their contents
-        processedSvg = processedSvg.replace(
-          /<g[^>]*(?:display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>]*>[\s\S]*?<\/g>/g,
-          ''
-        );
+          // Check direct attributes
+          if (element.includes('display="none"') || 
+              element.includes('opacity="0"') ||
+              (element.includes('fill="none"') && element.includes('stroke="none"'))) {
+            return true;
+          }
 
-        // Remove individual hidden elements
-        processedSvg = processedSvg.replace(
-          /<(?:path|circle|rect|ellipse|polygon|polyline|line)(?:[^>]*(?:display:\s*none|visibility:\s*hidden|opacity:\s*0|display="none"|visibility="hidden"|opacity="0")[^>]*)\/?>(?:<\/(?:path|circle|rect|ellipse|polygon|polyline|line)>)?/g,
-          ''
-        );
+          // Check class references
+          const classMatch = element.match(/class="([^"]*)"/);
+          if (classMatch) {
+            const classes = classMatch[1].split(/\s+/);
+            for (const className of classes) {
+              const styleRule = styleDefinitions[className];
+              if (styleRule && (
+                  styleRule.includes('display:none') ||
+                  styleRule.includes('display: none') ||
+                  /opacity:\s*0(?:\.0+)?/.test(styleRule) ||
+                  (styleRule.includes('fill:none') && styleRule.includes('stroke:none')) ||
+                  (styleRule.includes('fill: none') && styleRule.includes('stroke: none'))
+              )) {
+                return true;
+              }
+            }
+          }
+
+          return false;
+        };
+
+        // Split SVG into lines to check parent visibility
+        const lines = processedSvg.split('\n');
+        const visibilityStack: boolean[] = [true];
+        const processedLines = lines.map(line => {
+          if (line.includes('</g>')) {
+            visibilityStack.pop();
+            return line;
+          }
+
+          if (line.includes('<g')) {
+            const parentVisible = visibilityStack[visibilityStack.length - 1];
+            const currentVisible = parentVisible && !isHidden(line);
+            visibilityStack.push(currentVisible);
+            return line;
+          }
+
+          const parentVisible = visibilityStack[visibilityStack.length - 1];
+          if (!parentVisible || !line.match(/<(?:path|circle|rect|ellipse|polygon|polyline|line)/) || isHidden(line)) {
+            return line;
+          }
+
+          // Make visible elements with IDs selectable
+          return line.replace(
+            /(<(?:path|circle|rect|ellipse|polygon|polyline|line)[^>]*?)(id="[^"]*")([^>]*>)/,
+            (match, prefix, idAttr, suffix) => {
+              const id = idAttr.split('"')[1];
+              const isSelected = selectedElements.has(id);
+
+              // Preserve existing style
+              const existingStyle = match.match(/style="([^"]*)"/)?.[1] || '';
+              const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer;${isSelected ? ' stroke: #4299e1; stroke-width: 2;' : ''}`;
+
+              return `${prefix}${idAttr} style="${combinedStyle}" data-selectable="true"${suffix}`;
+            }
+          );
+        });
+
+        processedSvg = processedLines.join('\n');
       }
 
       setSanitizedSvg(processedSvg);
