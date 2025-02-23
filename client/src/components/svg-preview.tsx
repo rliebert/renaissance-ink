@@ -36,45 +36,48 @@ export function SVGPreview({
 
       let processedSvg = svg;
 
-      // Don't modify viewBox for animated SVGs to preserve animations
-      if (selectable) {
-        // Extract viewBox from original SVG
-        const viewBoxMatch = svg.match(/viewBox="([^"]+)"/);
-        let viewBox = viewBoxMatch ? viewBoxMatch[1] : null;
+      // Extract viewBox from original SVG
+      const viewBoxMatch = svg.match(/viewBox="([^"]+)"/);
+      let viewBox = viewBoxMatch ? viewBoxMatch[1] : null;
 
-        // Parse viewBox values if they exist
-        let x = 0, y = 0, width = 100, height = 100;
-        if (viewBox) {
-          [x, y, width, height] = viewBox.split(' ').map(Number);
-        } else {
-          // Try to get dimensions from width/height attributes
-          const widthMatch = svg.match(/width="([^"]+)"/);
-          const heightMatch = svg.match(/height="([^"]+)"/);
-          if (widthMatch && heightMatch) {
-            width = parseFloat(widthMatch[1]);
-            height = parseFloat(heightMatch[1]);
-          }
-        }
-
-        // Add 10% padding to viewBox for selection highlights
-        const padding = 0.1;
-        const paddedX = x - width * padding;
-        const paddedY = y - height * padding;
-        const paddedWidth = width * (1 + 2 * padding);
-        const paddedHeight = height * (1 + 2 * padding);
-
-        // Update viewBox with padding
-        const newViewBox = `${paddedX} ${paddedY} ${paddedWidth} ${paddedHeight}`;
-        processedSvg = processedSvg.replace(/viewBox="[^"]*"/, `viewBox="${newViewBox}"`);
-        if (!viewBoxMatch) {
-          processedSvg = processedSvg.replace('<svg', `<svg viewBox="${newViewBox}"`);
+      // Parse viewBox values if they exist
+      let x = 0, y = 0, width = 100, height = 100;
+      if (viewBox) {
+        [x, y, width, height] = viewBox.split(' ').map(Number);
+      } else {
+        // Try to get dimensions from width/height attributes
+        const widthMatch = svg.match(/width="([^"]+)"/);
+        const heightMatch = svg.match(/height="([^"]+)"/);
+        if (widthMatch && heightMatch) {
+          width = parseFloat(widthMatch[1]);
+          height = parseFloat(heightMatch[1]);
         }
       }
 
-      // Ensure the SVG preserves aspect ratio
-      if (!processedSvg.includes('preserveAspectRatio')) {
-        processedSvg = processedSvg.replace(/<svg/, '<svg preserveAspectRatio="xMidYMid meet"');
+      // Add 10% padding to viewBox for selection highlights
+      const padding = 0.1;
+      const paddedX = x - width * padding;
+      const paddedY = y - height * padding;
+      const paddedWidth = width * (1 + 2 * padding);
+      const paddedHeight = height * (1 + 2 * padding);
+
+      // Update viewBox with padding
+      const newViewBox = `${paddedX} ${paddedY} ${paddedWidth} ${paddedHeight}`;
+      processedSvg = processedSvg.replace(/viewBox="[^"]*"/, `viewBox="${newViewBox}"`);
+      if (!viewBoxMatch) {
+        processedSvg = processedSvg.replace('<svg', `<svg viewBox="${newViewBox}"`);
       }
+
+      // Ensure the SVG preserves aspect ratio and fits properly
+      processedSvg = processedSvg.replace(/<svg([^>]*)>/, (match, attributes) => {
+        // Remove any existing width/height/preserveAspectRatio attributes
+        let cleanedAttrs = attributes
+          .replace(/width="[^"]*"/g, '')
+          .replace(/height="[^"]*"/g, '')
+          .replace(/preserveAspectRatio="[^"]*"/g, '');
+
+        return `<svg${cleanedAttrs} preserveAspectRatio="xMidYMid meet">`;
+      });
 
       // For selectable view, make elements interactive and handle selection highlighting
       if (selectable) {
@@ -166,7 +169,7 @@ export function SVGPreview({
 
   const containerClass = `relative ${className}`;
   const svgWrapperClass = "w-full h-full flex items-center justify-center p-4";
-  const svgClass = "max-w-full max-h-full w-auto h-auto";
+  const svgClass = "w-full h-full object-contain";
 
   return (
     <div className="space-y-2">
