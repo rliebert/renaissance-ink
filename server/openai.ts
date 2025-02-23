@@ -31,9 +31,11 @@ function mergeSvgContent(originalSvg: string, animatedSvg: string): string {
     // Replace omitted content in animated SVG
     let mergedSvg = animatedSvg;
 
-    // Handle omitted paths comment
+    // Handle all variations of omitted content comments
+    const omittedContentRegex = /<!--\s*(?:Other\s+)?(?:paths|content|elements|groups|sections)\s+omitted.*?-->/g;
+
     mergedSvg = mergedSvg.replace(
-      /<!-- ?(?:Other )?paths omitted for brevity ?-->/g,
+      omittedContentRegex,
       (match, offset) => {
         // Find the closest parent g element
         const beforeComment = mergedSvg.slice(0, offset);
@@ -60,34 +62,6 @@ function mergeSvgContent(originalSvg: string, animatedSvg: string): string {
           .join('\n');
 
         return missingPaths;
-      }
-    );
-
-    // Handle other omitted content
-    mergedSvg = mergedSvg.replace(
-      /<!--[\s\S]*?-->/g,
-      (comment) => {
-        if (comment.includes('omitted')) {
-          // Try to find corresponding content in original SVG
-          const beforeComment = mergedSvg.slice(0, mergedSvg.indexOf(comment));
-          const afterComment = mergedSvg.slice(mergedSvg.indexOf(comment) + comment.length);
-
-          // Use the surrounding tags to find the corresponding section in the original
-          const lastOpenTag = beforeComment.match(/<[^/][^>]*>(?!.*<[^/][^>]*>)/)?.[0] || '';
-          const nextCloseTag = afterComment.match(/^[^<]*<\/[^>]+>/)?.[0] || '';
-
-          if (lastOpenTag && nextCloseTag) {
-            const tagName = lastOpenTag.match(/<([^ >]+)/)?.[1];
-            if (tagName) {
-              const pattern = new RegExp(
-                `${escapeRegExp(lastOpenTag)}([\\s\\S]*?)${escapeRegExp(nextCloseTag)}`
-              );
-              const originalContent = originalSvg.match(pattern)?.[1] || '';
-              return originalContent;
-            }
-          }
-        }
-        return comment;
       }
     );
 
@@ -118,11 +92,14 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
       messages: [
         {
           role: "system",
-          content: "You are an expert in SVG animations. Generate SMIL or CSS animations for SVG files based on descriptions. Output valid SVG code with animations only."
+          content: `You are an expert in SVG animations. Generate SMIL or CSS animations for SVG files based on descriptions. 
+When parts of the SVG are omitted for brevity, always use the exact comment format: 
+<!-- paths omitted for brevity -->
+This helps our system correctly replace the omitted content. Output valid SVG code with animations only.`
         },
         {
           role: "user",
-          content: `Original SVG:\n${cleanedSvg}\n\nDescription: ${description}\n\nPlease generate an animated version of this SVG according to the description. Return only the complete SVG code with animations.`
+          content: `Original SVG:\n${cleanedSvg}\n\nDescription: ${description}\n\nPlease generate an animated version of this SVG according to the description. When omitting content for brevity, use EXACTLY the comment <!-- paths omitted for brevity --> to mark omitted sections. Return only the complete SVG code with animations.`
         }
       ],
       temperature: 0.7,
