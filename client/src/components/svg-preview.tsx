@@ -39,21 +39,34 @@ export function SVGPreview({
 
       // Extract viewBox from original SVG
       const viewBoxMatch = svg.match(/viewBox="([^"]+)"/);
-      const viewBox = viewBoxMatch ? viewBoxMatch[1] : null;
-      setSvgViewBox(viewBox);
+      let viewBox = viewBoxMatch ? viewBoxMatch[1] : null;
 
-      // Add viewBox if missing, using width/height if available
-      if (!viewBox) {
+      // Parse viewBox values if they exist
+      let x = 0, y = 0, width = 100, height = 100;
+      if (viewBox) {
+        [x, y, width, height] = viewBox.split(' ').map(Number);
+      } else {
+        // Try to get dimensions from width/height attributes
         const widthMatch = svg.match(/width="([^"]+)"/);
         const heightMatch = svg.match(/height="([^"]+)"/);
         if (widthMatch && heightMatch) {
-          const width = parseFloat(widthMatch[1]);
-          const height = parseFloat(heightMatch[1]);
-          processedSvg = processedSvg.replace('<svg', `<svg viewBox="0 0 ${width} ${height}"`);
-        } else {
-          // Default viewBox if no dimensions found
-          processedSvg = processedSvg.replace('<svg', '<svg viewBox="0 0 100 100"');
+          width = parseFloat(widthMatch[1]);
+          height = parseFloat(heightMatch[1]);
         }
+      }
+
+      // Add 20% padding to viewBox for animations and selection highlights
+      const padding = 0.2; // 20% padding
+      const paddedX = x - width * padding;
+      const paddedY = y - height * padding;
+      const paddedWidth = width * (1 + 2 * padding);
+      const paddedHeight = height * (1 + 2 * padding);
+
+      // Update viewBox with padding
+      const newViewBox = `${paddedX} ${paddedY} ${paddedWidth} ${paddedHeight}`;
+      processedSvg = processedSvg.replace(/viewBox="[^"]*"/, `viewBox="${newViewBox}"`);
+      if (!viewBoxMatch) {
+        processedSvg = processedSvg.replace('<svg', `<svg viewBox="${newViewBox}"`);
       }
 
       // Ensure the SVG preserves aspect ratio and fits within bounds
