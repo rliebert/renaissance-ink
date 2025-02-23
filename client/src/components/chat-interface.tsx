@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { z } from "zod";
 import type { Message } from "@shared/schema";
 import { SVGPreview } from "./svg-preview";
@@ -158,7 +158,7 @@ export function ChatInterface({
               disabled={isLoading}
             >
               {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoadingIndicator className="w-4 h-4" />
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}
