@@ -18,7 +18,7 @@ export function SVGPreview({
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [sanitizedSvg, setSanitizedSvg] = useState<string | null>(null);
-  const [key, setKey] = useState(0); // Force re-render on selection changes
+  const [key, setKey] = useState(0);
 
   useEffect(() => {
     if (!svg) {
@@ -28,12 +28,10 @@ export function SVGPreview({
     }
 
     try {
-      // Basic SVG validation
       if (!svg.includes('<svg')) {
         throw new Error('Invalid SVG format');
       }
 
-      // Ensure SVG has width/height or viewBox
       let processedSvg = svg;
       if (!svg.includes('width=') && !svg.includes('viewBox=')) {
         processedSvg = processedSvg.replace('<svg', '<svg width="100%" height="100%"');
@@ -42,39 +40,36 @@ export function SVGPreview({
       if (selectable) {
         console.log('Processing SVG for selectable elements...');
 
-        // Process SVG to make elements selectable
         const processedLines = processedSvg.split('\n').map(line => {
           return line.replace(
             /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
             (match, tagName, beforeId, id, afterId) => {
-              if (!id) return match;
+              if (!id) {
+                console.log('Element without ID found:', match);
+                return match;
+              }
 
               const isSelected = selectedElements.has(id);
-              console.log(`Processing element ${id}, selected: ${isSelected}`);
+              console.log(`Processing element ${id}, selected:`, isSelected);
+
+              // Add direct stroke attributes for better visibility
+              const strokeAttrs = isSelected ? 
+                'stroke="#4299e1" stroke-width="2" stroke-opacity="1"' : '';
 
               // Clean up existing styles
-              const existingStyleMatch = match.match(/style="([^"]*)"/);
-              let existingStyle = existingStyleMatch ? existingStyleMatch[1] : '';
-
-              // Build enhanced selection style with important flags
-              const selectionStyles = isSelected ? `
-                stroke: #4299e1 !important;
-                stroke-width: 2px !important;
-                stroke-opacity: 1 !important;
-                pointer-events: all !important;
-                cursor: pointer !important;
-              ` : 'cursor: pointer !important;';
-
-              // Combine styles, ensuring selection styles take precedence
-              const combinedStyle = `${existingStyle}; ${selectionStyles}`.trim();
-
-              // Remove any existing style attributes and reconstruct element
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
-              const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${combinedStyle}" data-selectable="true" ${cleanedAfterId}>`;
+              // Add pointer cursor and selection styles
+              const styles = [
+                'cursor: pointer',
+                isSelected && 'outline: 2px solid #4299e1',
+                isSelected && 'outline-offset: 2px'
+              ].filter(Boolean).join('; ');
 
-              console.log(`Styled element ${id}:`, result);
+              const result = `<${tagName} ${cleanedBeforeId} id="${id}" ${strokeAttrs} style="${styles}" data-selectable="true" ${cleanedAfterId}>`;
+
+              console.log('Generated element:', result);
               return result;
             }
           );
@@ -85,51 +80,33 @@ export function SVGPreview({
 
       setSanitizedSvg(processedSvg);
       setError(null);
-      setKey(prev => prev + 1); // Force re-render when SVG changes
+      setKey(prev => prev + 1);
     } catch (err) {
       console.error('SVG Processing Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process SVG');
       setSanitizedSvg(null);
     }
-  }, [svg, selectable, selectedElements]); // Re-run when selection changes
+  }, [svg, selectable, selectedElements]);
 
   const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
     let current: HTMLElement | null = element;
-
     while (current) {
-      const id = current.getAttribute('id');
-      console.log('Checking element:', {
-        tagName: current.tagName,
-        id,
-        isSelectable: current.getAttribute('data-selectable')
-      });
-
-      if (id && ['path', 'circle', 'rect', 'ellipse', 'polygon', 'polyline', 'line']
-          .includes(current.tagName.toLowerCase())) {
+      if (current.getAttribute('data-selectable') === 'true') {
         return current;
       }
       current = current.parentElement;
     }
-
     return null;
   };
 
   const handleClick = (event: React.MouseEvent) => {
-    if (!selectable || !onElementSelect) {
-      console.log('Click ignored - selection not enabled');
-      return;
-    }
+    if (!selectable || !onElementSelect) return;
 
     const target = event.target as HTMLElement;
     console.log('Click event details:', {
-      tagName: target.tagName,
+      target: target.tagName,
       id: target.id,
-      className: target.className,
-      attributes: Array.from(target.attributes).map(attr => `${attr.name}="${attr.value}"`),
-      parentElement: target.parentElement ? {
-        tagName: target.parentElement.tagName,
-        id: target.parentElement.id
-      } : null
+      attrs: Array.from(target.attributes).map(a => `${a.name}="${a.value}"`)
     });
 
     const selectableElement = findSelectableElement(target);
@@ -137,25 +114,14 @@ export function SVGPreview({
       const id = selectableElement.id;
       console.log('Found selectable element:', {
         id,
-        tagName: selectableElement.tagName,
         currentlySelected: selectedElements.has(id)
       });
       onElementSelect(id);
-
-      // Force re-render after selection
       setKey(prev => prev + 1);
     } else {
-      console.log('No selectable element found in click path');
+      console.log('No selectable element found');
     }
   };
-
-  if (!svg) {
-    return (
-      <Card className="w-full h-[300px] flex items-center justify-center bg-muted">
-        <p className="text-muted-foreground">No SVG to preview</p>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-2">
@@ -175,7 +141,7 @@ export function SVGPreview({
           <p className="text-destructive">{error}</p>
         ) : (
           <div
-            key={key} // Force re-render when selection changes
+            key={key}
             className="w-full h-full flex items-center justify-center"
             dangerouslySetInnerHTML={{ __html: sanitizedSvg || '' }}
           />
