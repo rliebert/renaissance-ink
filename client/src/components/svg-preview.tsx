@@ -131,8 +131,8 @@ export function SVGPreview({
                 existingStyle = existingStyle.trim();
               }
 
-              const selectionStyle = isSelected ? 'stroke: #4299e1; stroke-width: 2;' : '';
-              const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer; ${selectionStyle}`.trim();
+              const selectionStyle = isSelected ? ' !important; stroke: #4299e1 !important; stroke-width: 2px !important' : '';
+              const combinedStyle = `${existingStyle}${existingStyle ? ';' : ''}cursor: pointer${selectionStyle}`.trim();
 
               return `${prefix}${idAttr} style="${combinedStyle}" data-selectable="true"${suffix}`;
             }
