@@ -27,7 +27,7 @@ export function SVGPreview({
     }
 
     try {
-      // Basic SVG validation and sanitization
+      // Basic SVG validation
       if (!svg.includes('<svg')) {
         throw new Error('Invalid SVG format');
       }
@@ -38,14 +38,30 @@ export function SVGPreview({
         processedSvg = processedSvg.replace('<svg', '<svg width="100%" height="100%"');
       }
 
-      // If selectable, add click handlers to SVG elements
+      // If selectable, add click handlers to visible SVG elements
       if (selectable) {
+        // First, make all elements unselectable by default
         processedSvg = processedSvg.replace(
-          /(<(?:path|circle|rect|ellipse|polygon|polyline|line|g)[^>]*)(id="[^"]*")/g,
-          (match, prefix, idAttr) => {
-            const id = idAttr.split('"')[1];
+          /<(?:path|circle|rect|ellipse|polygon|polyline|line|g)[^>]*>/g,
+          match => match.replace(/data-selectable="true"/, '').replace(/ style="[^"]*"/, '')
+        );
+
+        // Then, make only visible elements selectable
+        processedSvg = processedSvg.replace(
+          /<(?:path|circle|rect|ellipse|polygon|polyline|line|g)(?:[^>]*?id="[^"]*")[^>]*?(?:(?!display="none"|visibility="hidden"|opacity="0"|style="[^"]*(?:display:\s*none|visibility:\s*hidden|opacity:\s*0)[^"]*")[^>])*>/g,
+          (match) => {
+            // Extract id if present
+            const idMatch = match.match(/id="([^"]*)"/);
+            if (!idMatch) return match;
+
+            const id = idMatch[1];
             const isSelected = selectedElements.has(id);
-            return `${prefix} ${idAttr} style="cursor: pointer; ${isSelected ? 'stroke: #4299e1; stroke-width: 2;' : ''}" data-selectable="true"`;
+
+            // Add selectable attribute and styling
+            return match.replace(
+              />$/,
+              ` style="cursor: pointer; ${isSelected ? 'stroke: #4299e1; stroke-width: 2;' : ''}" data-selectable="true" />`
+            );
           }
         );
       }
@@ -84,7 +100,7 @@ export function SVGPreview({
         <h3 className="font-medium text-lg">{title}</h3>
         {selectable && (
           <p className="text-sm text-muted-foreground">
-            Click on elements to select them for animation
+            Click on visible elements to select them for animation
           </p>
         )}
       </div>
