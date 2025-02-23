@@ -92,14 +92,22 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
       messages: [
         {
           role: "system",
-          content: `You are an expert in SVG animations. Generate SMIL or CSS animations for SVG files based on descriptions. 
-When parts of the SVG are omitted for brevity, always use the exact comment format: 
-<!-- paths omitted for brevity -->
-This helps our system correctly replace the omitted content. Output valid SVG code with animations only.`
+          content: `You are an SVG animation expert. Your task is to generate SMIL animations for SVG files.
+Important requirements:
+1. Output ONLY the complete SVG code with animations, no explanations or markdown
+2. Include ALL paths and elements, do not use omission comments
+3. If the SVG must be split due to length, use EXACTLY this comment format:
+   <!-- paths omitted for brevity -->
+4. No code blocks, no \`\`\` markers, just raw SVG
+5. Preserve the original viewBox and dimensions`
         },
         {
           role: "user",
-          content: `Original SVG:\n${cleanedSvg}\n\nDescription: ${description}\n\nPlease generate an animated version of this SVG according to the description. When omitting content for brevity, use EXACTLY the comment <!-- paths omitted for brevity --> to mark omitted sections. Return only the complete SVG code with animations.`
+          content: `Here is an SVG to animate according to this description: "${description}"
+
+${cleanedSvg}
+
+Return only the complete animated SVG code.`
         }
       ],
       temperature: 0.7,
@@ -116,8 +124,12 @@ This helps our system correctly replace the omitted content. Output valid SVG co
       throw new Error("Generated content is not a valid SVG");
     }
 
+    // Extract just the SVG content if it's wrapped in any markdown
+    const svgMatch = generatedSvg.match(/<svg[\s\S]*<\/svg>/);
+    const cleanGeneratedSvg = svgMatch ? svgMatch[0] : generatedSvg;
+
     // Merge the generated SVG with the original to fill in any omitted content
-    const mergedSvg = mergeSvgContent(svg, generatedSvg);
+    const mergedSvg = mergeSvgContent(svg, cleanGeneratedSvg);
 
     return mergedSvg;
   } catch (error: any) {
