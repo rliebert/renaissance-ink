@@ -121,20 +121,23 @@ export function SVGPreview({
 
           // Make visible elements with IDs selectable
           const processedLine = line.replace(
-            /<path\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
-            (match, beforeId, id, afterId) => {
+            /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
+            (match, tagName, beforeId, id, afterId) => {
               // Skip if no id attribute found
               if (!id) {
-                console.log('Path without ID found:', match);
+                console.log('Element without ID found:', match);
                 return match;
               }
 
-              console.log('Processing path element:', {
+              console.log('Processing element:', {
+                tagName,
                 id,
                 fullMatch: match,
                 beforeId,
                 afterId
               });
+
+              elementCount++;
 
               // Get existing style from either part
               const styleRegex = /style="([^"]*)"/;
@@ -155,19 +158,22 @@ export function SVGPreview({
                   .trim();
               }
 
-              // Build the new style
+              // Build the new style with important flags to override any existing styles
               const selectionStyle = isSelected ? 'stroke: #4299e1 !important; stroke-width: 2px !important;' : '';
               const newStyle = `${cleanStyle}${cleanStyle ? '; ' : ''}cursor: pointer; ${selectionStyle}`.trim();
 
+              // Remove any existing style attributes
+              let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
+              let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
+
               // Reconstruct the element with new attributes
-              const result = `<path ${beforeId} id="${id}" style="${newStyle}" data-selectable="true" ${afterId}>`;
+              const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${newStyle}" data-selectable="true" ${cleanedAfterId}>`;
 
               console.log('Processed result:', result);
               return result;
             }
           );
           return processedLine;
-
         });
 
         console.log(`Processed ${elementCount} selectable elements`);
