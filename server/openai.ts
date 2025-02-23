@@ -34,13 +34,14 @@ function validateSvgStructure(svg: string, originalSvg: string): string {
     throw new Error("Invalid SVG: missing svg tag");
   }
 
-  // Preserve original SVG attributes while keeping any new animation-related attributes
-  const originalAttrs = Object.fromEntries(
-    [...originalSvgTag.matchAll(/(\w+:?\w+)="([^"]*)"/g)].map(m => [m[1], m[2]])
-  );
-  const newAttrs = Object.fromEntries(
-    [...newSvgTag.matchAll(/(\w+:?\w+)="([^"]*)"/g)].map(m => [m[1], m[2]])
-  );
+  // Extract attributes using regular expressions without spread operator
+  const originalAttrs: Record<string, string> = {};
+  const originalMatches = Array.from(originalSvgTag.matchAll(/(\w+:?\w+)="([^"]*)"/g));
+  originalMatches.forEach(m => originalAttrs[m[1]] = m[2]);
+
+  const newAttrs: Record<string, string> = {};
+  const newMatches = Array.from(newSvgTag.matchAll(/(\w+:?\w+)="([^"]*)"/g));
+  newMatches.forEach(m => newAttrs[m[1]] = m[2]);
 
   // Merge attributes, prioritizing original attributes except for animation-related ones
   const mergedAttrs = { ...newAttrs, ...originalAttrs };
@@ -91,7 +92,13 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
     const descriptionTokens = Math.ceil(description.length / 4);
     const totalTokens = svgTokens + descriptionTokens;
 
-    if (totalTokens > 7000) {
+    // GPT-4's context window is 8192 tokens, we need to leave room for:
+    // - System message (~200 tokens)
+    // - Response completion (~2000 tokens)
+    // - Safety margin (~500 tokens)
+    const maxInputTokens = 5000;
+
+    if (totalTokens > maxInputTokens) {
       throw new Error("SVG file is too complex. Please simplify the SVG or break it into smaller parts.");
     }
 
@@ -100,7 +107,7 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
       messages: [
         {
           role: "system",
-          content: `You are an SVG animation expert specializing in SMIL animations.
+          content: `You are an expert autonomous programmer specializing in SVG animations.
 CRITICAL REQUIREMENTS:
 1. Return ONLY the complete SVG code with animations
 2. Do NOT use ANY comments or omissions - include every single path and element
@@ -122,7 +129,7 @@ Return the complete SVG with ALL original elements and added animations. Do not 
         }
       ],
       temperature: 0.7,
-      max_tokens: 4000,
+      max_tokens: 2000,
     });
 
     const generatedSvg = response.choices[0].message.content;
