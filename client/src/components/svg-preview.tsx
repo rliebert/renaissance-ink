@@ -9,9 +9,9 @@ interface SVGPreviewProps {
   selectedElements?: Set<string>;
 }
 
-export function SVGPreview({ 
-  svg, 
-  title, 
+export function SVGPreview({
+  svg,
+  title,
   selectable = false,
   onElementSelect,
   selectedElements = new Set()
@@ -60,7 +60,7 @@ export function SVGPreview({
           const styleMatch = element.match(/style="([^"]*)"/);
           if (styleMatch) {
             const style = styleMatch[1];
-            if (style.includes('display:none') || 
+            if (style.includes('display:none') ||
                 style.includes('display: none') ||
                 /opacity:\s*0(?:\.0+)?/.test(style) ||
                 (style.includes('fill:none') && style.includes('stroke:none')) ||
@@ -70,7 +70,7 @@ export function SVGPreview({
           }
 
           // Check direct attributes
-          if (element.includes('display="none"') || 
+          if (element.includes('display="none"') ||
               element.includes('opacity="0"') ||
               (element.includes('fill="none"') && element.includes('stroke="none"'))) {
             return true;
@@ -121,36 +121,53 @@ export function SVGPreview({
 
           // Make visible elements with IDs selectable
           const processedLine = line.replace(
-            /(<(?:path|circle|rect|ellipse|polygon|polyline|line)[^>]*?)(id="[^"]*")([^>]*?>)/g,
-            (match, prefix, idAttr, suffix) => {
-              const id = idAttr.split('"')[1];
-              console.log('Processing element with ID:', id);
-              elementCount++;
-              const isSelected = selectedElements.has(id);
-
-              // Preserve existing style while adding selection styles
-              let existingStyle = match.match(/style="([^"]*)"/)?.[1] || '';
-              if (existingStyle) {
-                existingStyle = existingStyle.replace(/cursor:\s*pointer;?\s*/, '');
-                existingStyle = existingStyle.replace(/stroke:\s*#4299e1;?\s*/, '');
-                existingStyle = existingStyle.replace(/stroke-width:\s*2;?\s*/, '');
-                existingStyle = existingStyle.trim();
+            /<path\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
+            (match, beforeId, id, afterId) => {
+              // Skip if no id attribute found
+              if (!id) {
+                console.log('Path without ID found:', match);
+                return match;
               }
 
-              const selectionStyle = isSelected ? ' !important; stroke: #4299e1 !important; stroke-width: 2px !important' : '';
-              const combinedStyle = `${existingStyle}${existingStyle ? ';' : ''}cursor: pointer${selectionStyle}`.trim();
-
-              console.log('Element style:', {
+              console.log('Processing path element:', {
                 id,
-                isSelected,
-                originalStyle: existingStyle,
-                newStyle: combinedStyle
+                fullMatch: match,
+                beforeId,
+                afterId
               });
 
-              return `${prefix}${idAttr} style="${combinedStyle}" data-selectable="true"${suffix}`;
+              // Get existing style from either part
+              const styleRegex = /style="([^"]*)"/;
+              const existingStyle = (beforeId.match(styleRegex) || afterId.match(styleRegex))?.[1] || '';
+
+              console.log('Existing style:', existingStyle);
+
+              const isSelected = selectedElements.has(id);
+              console.log('Selection state:', { id, isSelected });
+
+              // Clean up any existing selection styles
+              let cleanStyle = existingStyle;
+              if (cleanStyle) {
+                cleanStyle = cleanStyle
+                  .replace(/cursor:\s*pointer;?\s*/g, '')
+                  .replace(/stroke:\s*#4299e1;?\s*/g, '')
+                  .replace(/stroke-width:\s*2px?;?\s*/g, '')
+                  .trim();
+              }
+
+              // Build the new style
+              const selectionStyle = isSelected ? 'stroke: #4299e1 !important; stroke-width: 2px !important;' : '';
+              const newStyle = `${cleanStyle}${cleanStyle ? '; ' : ''}cursor: pointer; ${selectionStyle}`.trim();
+
+              // Reconstruct the element with new attributes
+              const result = `<path ${beforeId} id="${id}" style="${newStyle}" data-selectable="true" ${afterId}>`;
+
+              console.log('Processed result:', result);
+              return result;
             }
           );
           return processedLine;
+
         });
 
         console.log(`Processed ${elementCount} selectable elements`);
@@ -214,14 +231,14 @@ export function SVGPreview({
           </p>
         )}
       </div>
-      <Card 
+      <Card
         className="w-full min-h-[300px] p-4 flex items-center justify-center overflow-hidden"
         onClick={handleClick}
       >
         {error ? (
           <p className="text-destructive">{error}</p>
         ) : (
-          <div 
+          <div
             className="w-full h-full flex items-center justify-center"
             dangerouslySetInnerHTML={{ __html: sanitizedSvg || '' }}
           />
