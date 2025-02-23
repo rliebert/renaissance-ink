@@ -34,7 +34,7 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
 
   let defs = document.querySelector('defs');
   if (!defs) {
-    defs = document.createElement('defs');
+    defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
     svg.insertBefore(defs, svg.firstChild);
   }
 
@@ -46,7 +46,7 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
       for (const animation of animations) {
         const template = document.createElement('template');
         template.innerHTML = animation.trim();
-        element.appendChild(template.content.firstChild);
+        element.appendChild(template.content.firstChild!);
       }
     }
   }
