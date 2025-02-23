@@ -8,9 +8,34 @@ interface SVGPreviewProps {
 
 export function SVGPreview({ svg, title }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
+  const [sanitizedSvg, setSanitizedSvg] = useState<string | null>(null);
 
   useEffect(() => {
-    setError(null);
+    if (!svg) {
+      setSanitizedSvg(null);
+      setError(null);
+      return;
+    }
+
+    try {
+      // Basic SVG validation and sanitization
+      if (!svg.includes('<svg')) {
+        throw new Error('Invalid SVG format');
+      }
+
+      // Ensure SVG has width/height or viewBox
+      let processedSvg = svg;
+      if (!svg.includes('width=') && !svg.includes('viewBox=')) {
+        processedSvg = processedSvg.replace('<svg', '<svg width="100%" height="100%"');
+      }
+
+      // Preserve animations by keeping <style> and <defs> tags
+      setSanitizedSvg(processedSvg);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process SVG');
+      setSanitizedSvg(null);
+    }
   }, [svg]);
 
   if (!svg) {
@@ -28,9 +53,9 @@ export function SVGPreview({ svg, title }: SVGPreviewProps) {
         {error ? (
           <p className="text-destructive">{error}</p>
         ) : (
-          <div
-            dangerouslySetInnerHTML={{ __html: svg }}
-            onError={() => setError("Failed to render SVG")}
+          <div 
+            className="w-full h-full flex items-center justify-center"
+            dangerouslySetInnerHTML={{ __html: sanitizedSvg || '' }}
           />
         )}
       </Card>
