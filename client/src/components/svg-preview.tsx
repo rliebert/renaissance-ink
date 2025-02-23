@@ -39,10 +39,13 @@ export function SVGPreview({
       }
 
       if (selectable) {
+        console.log('Processing SVG for selectable elements...');
+
         // Extract style definitions
         const styleMatch = processedSvg.match(/<style[^>]*>([\s\S]*?)<\/style>/);
         const styleDefinitions: Record<string, string> = {};
         if (styleMatch) {
+          console.log('Found style definitions in SVG');
           const styleContent = styleMatch[1];
           const styleRules = styleContent.match(/\.[^{]+{[^}]+}/g) || [];
           styleRules.forEach(rule => {
@@ -97,6 +100,7 @@ export function SVGPreview({
         // Split SVG into lines to check parent visibility
         const lines = processedSvg.split('\n');
         const visibilityStack: boolean[] = [true];
+        let elementCount = 0;
         const processedLines = lines.map(line => {
           if (line.includes('</g>')) {
             visibilityStack.pop();
@@ -116,10 +120,12 @@ export function SVGPreview({
           }
 
           // Make visible elements with IDs selectable
-          return line.replace(
+          const processedLine = line.replace(
             /(<(?:path|circle|rect|ellipse|polygon|polyline|line)[^>]*?)(id="[^"]*")([^>]*?>)/g,
             (match, prefix, idAttr, suffix) => {
               const id = idAttr.split('"')[1];
+              console.log('Processing element with ID:', id);
+              elementCount++;
               const isSelected = selectedElements.has(id);
 
               // Preserve existing style while adding selection styles
@@ -134,11 +140,20 @@ export function SVGPreview({
               const selectionStyle = isSelected ? ' !important; stroke: #4299e1 !important; stroke-width: 2px !important' : '';
               const combinedStyle = `${existingStyle}${existingStyle ? ';' : ''}cursor: pointer${selectionStyle}`.trim();
 
+              console.log('Element style:', {
+                id,
+                isSelected,
+                originalStyle: existingStyle,
+                newStyle: combinedStyle
+              });
+
               return `${prefix}${idAttr} style="${combinedStyle}" data-selectable="true"${suffix}`;
             }
           );
+          return processedLine;
         });
 
+        console.log(`Processed ${elementCount} selectable elements`);
         processedSvg = processedLines.join('\n');
       }
 
@@ -152,19 +167,32 @@ export function SVGPreview({
   }, [svg, selectable, selectedElements]);
 
   const handleClick = (event: React.MouseEvent) => {
-    if (!selectable || !onElementSelect) return;
+    if (!selectable || !onElementSelect) {
+      console.log('Click ignored - selection not enabled');
+      return;
+    }
 
     const target = event.target as HTMLElement;
-    console.log('Click target:', target);
-    console.log('Is selectable:', target.getAttribute('data-selectable'));
-    console.log('Element ID:', target.getAttribute('id'));
+    console.log('Click event details:', {
+      tagName: target.tagName,
+      id: target.id,
+      className: target.className,
+      attributes: Array.from(target.attributes).map(attr => `${attr.name}="${attr.value}"`),
+      isSelectable: target.getAttribute('data-selectable'),
+      parentElement: target.parentElement ? {
+        tagName: target.parentElement.tagName,
+        id: target.parentElement.id
+      } : null
+    });
 
     if (target.getAttribute('data-selectable') === 'true') {
       const id = target.getAttribute('id');
       if (id) {
-        console.log('Selecting element:', id);
+        console.log('Selecting element:', id, 'Current selection state:', selectedElements.has(id));
         onElementSelect(id);
       }
+    } else {
+      console.log('Clicked element is not selectable');
     }
   };
 
