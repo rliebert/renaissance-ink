@@ -41,59 +41,8 @@ export function SVGPreview({
       if (selectable) {
         console.log('Processing SVG for selectable elements...');
 
-        // Extract style definitions
-        const styleMatch = processedSvg.match(/<style[^>]*>([\s\S]*?)<\/style>/);
-        const styleDefinitions: Record<string, string> = {};
-        if (styleMatch) {
-          console.log('Found style definitions in SVG');
-          const styleContent = styleMatch[1];
-          const styleRules = styleContent.match(/\.[^{]+{[^}]+}/g) || [];
-          styleRules.forEach(rule => {
-            const [selector, styles] = rule.split('{');
-            styleDefinitions[selector.trim().slice(1)] = styles.slice(0, -1).trim();
-          });
-        }
-
-        // Function to check if an element or its parent is hidden
-        const isHidden = (element: string): boolean => {
-          // Check inline styles
-          const styleMatch = element.match(/style="([^"]*)"/);
-          if (styleMatch) {
-            const style = styleMatch[1];
-            if (style.includes('display:none') ||
-                style.includes('display: none') ||
-                /opacity:\s*0(?:\.0+)?/.test(style) ||
-                (style.includes('fill:none') && style.includes('stroke:none')) ||
-                (style.includes('fill: none') && style.includes('stroke: none'))) {
-              return true;
-            }
-          }
-
-          // Check class references
-          const classMatch = element.match(/class="([^"]*)"/);
-          if (classMatch) {
-            const classes = classMatch[1].split(/\s+/);
-            for (const className of classes) {
-              const styleRule = styleDefinitions[className];
-              if (styleRule && (
-                  styleRule.includes('display:none') ||
-                  styleRule.includes('display: none') ||
-                  /opacity:\s*0(?:\.0+)?/.test(styleRule) ||
-                  (styleRule.includes('fill:none') && styleRule.includes('stroke:none')) ||
-                  (styleRule.includes('fill: none') && styleRule.includes('stroke: none'))
-              )) {
-                return true;
-              }
-            }
-          }
-
-          return false;
-        };
-
         // Process SVG to make elements selectable
         const processedLines = processedSvg.split('\n').map(line => {
-          if (isHidden(line)) return line;
-
           // Make elements with IDs selectable
           return line.replace(
             /<(path|circle|rect|ellipse|polygon|polyline|line)\s+([^>]*?)(?:id="([^"]*)")?([^>]*?)>/g,
@@ -101,7 +50,6 @@ export function SVGPreview({
               if (!id) return match;
 
               const isSelected = selectedElements.has(id);
-              const selectionStyle = isSelected ? 'stroke: #4299e1 !important; stroke-width: 2px !important;' : '';
 
               // Clean up existing styles and add selection style
               const existingStyleMatch = match.match(/style="([^"]*)"/);
@@ -114,6 +62,7 @@ export function SVGPreview({
                   .trim();
               }
 
+              const selectionStyle = isSelected ? 'stroke: #4299e1 !important; stroke-width: 2px !important;' : '';
               const newStyle = `${cleanStyle}${cleanStyle ? '; ' : ''}cursor: pointer; ${selectionStyle}`.trim();
 
               // Remove any existing style attribute from both parts
