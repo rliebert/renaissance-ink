@@ -38,14 +38,7 @@ export function SVGPreview({
         processedSvg = processedSvg.replace('<svg', '<svg width="100%" height="100%"');
       }
 
-      // If selectable, add click handlers to visible SVG elements
       if (selectable) {
-        // First, make all elements unselectable by default
-        processedSvg = processedSvg.replace(
-          /<(?:path|circle|rect|ellipse|polygon|polyline|line|g)[^>]*>/g,
-          match => match.replace(/data-selectable="true"/, '').replace(/ style="[^"]*"/, '')
-        );
-
         // Extract style definitions
         const styleMatch = processedSvg.match(/<style[^>]*>([\s\S]*?)<\/style>/);
         const styleDefinitions: Record<string, string> = {};
