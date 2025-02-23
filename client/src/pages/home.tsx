@@ -27,6 +27,12 @@ export default function Home() {
     [selectedElements]
   );
 
+  // Memoize reference elements for stable query key
+  const referenceElementsKey = useMemo(
+    () => referenceElements.sort().join(','),
+    [referenceElements]
+  );
+
   const form = useForm({
     resolver: zodResolver(insertAnimationSchema),
     defaultValues: {
@@ -61,6 +67,34 @@ export default function Home() {
       }
     },
     enabled: !!originalSvg && selectedElements.length > 0
+  });
+
+  // Query for reference elements preview
+  const referencePreviewQuery = useQuery({
+    queryKey: ['svg-preview', referenceElementsKey],
+    queryFn: async () => {
+      if (!originalSvg || referenceElements.length === 0) {
+        return null;
+      }
+
+      try {
+        const response = await apiRequest("POST", "/api/svg/preview", {
+          svgContent: originalSvg,
+          selectedElements: referenceElements
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate reference preview');
+        }
+
+        const data = await response.json();
+        return data.preview as string;
+      } catch (error) {
+        console.error('Reference preview generation error:', error);
+        return null;
+      }
+    },
+    enabled: !!originalSvg && referenceElements.length > 0
   });
 
   const mutation = useMutation({
@@ -129,14 +163,14 @@ export default function Home() {
     if (selectionMode === 'animate') {
       setSelectedElements(prev => {
         const index = prev.indexOf(elementId);
-        return index >= 0 
+        return index >= 0
           ? prev.filter(id => id !== elementId)
           : [...prev, elementId];
       });
     } else {
       setReferenceElements(prev => {
         const index = prev.indexOf(elementId);
-        return index >= 0 
+        return index >= 0
           ? prev.filter(id => id !== elementId)
           : [...prev, elementId];
       });
@@ -243,7 +277,7 @@ export default function Home() {
                 variant={selectionMode === 'reference' ? 'default' : 'outline'}
                 onClick={() => setSelectionMode('reference')}
               >
-                Add Reference Point
+                Select Reference(s)
               </Button>
             </div>
 
@@ -264,6 +298,7 @@ export default function Home() {
             isLoading={mutation.isPending}
             animatedSvg={mutation.data?.animatedSvg}
             previewSvg={previewQuery.data}
+            referenceSvg={referencePreviewQuery.data}
           />
         </div>
 

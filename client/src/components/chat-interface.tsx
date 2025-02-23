@@ -24,6 +24,7 @@ interface ChatInterfaceProps {
   isLoading?: boolean;
   animatedSvg?: string | null;
   previewSvg?: string | null;
+  referenceSvg?: string | null;
 }
 
 export function ChatInterface({
@@ -31,7 +32,8 @@ export function ChatInterface({
   onSendMessage,
   isLoading = false,
   animatedSvg,
-  previewSvg
+  previewSvg,
+  referenceSvg
 }: ChatInterfaceProps) {
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
@@ -96,22 +98,44 @@ export function ChatInterface({
                     : "bg-muted"
                 }`}
               >
-                {message.role === "user" && index === messages.length - 1 && previewSvg && (
-                  <div className="mb-2 p-2 rounded bg-background/50">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
-                      <p className="text-xs opacity-70">Elements to animate:</p>
-                    </div>
-                    <div className="w-24 h-24 mx-auto bg-background rounded-lg">
-                      <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
-                        <SVGPreview
-                          svg={previewSvg}
-                          title=""
-                          className="w-full h-full"
-                          selectable={false}
-                        />
+                {message.role === "user" && index === messages.length - 1 && (previewSvg || referenceSvg) && (
+                  <div className="mb-2 p-2 rounded bg-background/50 space-y-4">
+                    {previewSvg && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
+                          <p className="text-xs opacity-70">Selected elements:</p>
+                        </div>
+                        <div className="w-24 h-24 mx-auto bg-background rounded-lg">
+                          <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
+                            <SVGPreview
+                              svg={previewSvg}
+                              title=""
+                              className="w-full h-full"
+                              selectable={false}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    {referenceSvg && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
+                          <p className="text-xs opacity-70">Selected ref(s):</p>
+                        </div>
+                        <div className="w-24 h-24 mx-auto bg-background rounded-lg">
+                          <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
+                            <SVGPreview
+                              svg={referenceSvg}
+                              title=""
+                              className="w-full h-full"
+                              selectable={false}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -173,22 +197,44 @@ export function ChatInterface({
       </ScrollArea>
 
       <div className="p-4 border-t space-y-4">
-        {previewSvg && (
-          <div className="p-2 border rounded-lg bg-muted">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
-              <p className="text-xs text-muted-foreground">Ready to animate:</p>
-            </div>
-            <div className="w-24 h-24 mx-auto bg-background rounded-lg">
-              <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
-                <SVGPreview
-                  svg={previewSvg}
-                  title=""
-                  className="w-full h-full"
-                  selectable={false}
-                />
+        {(previewSvg || referenceSvg) && (
+          <div className="p-2 border rounded-lg bg-muted space-y-4">
+            {previewSvg && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
+                  <p className="text-xs text-muted-foreground">Selected elements:</p>
+                </div>
+                <div className="w-24 h-24 mx-auto bg-background rounded-lg">
+                  <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
+                    <SVGPreview
+                      svg={previewSvg}
+                      title=""
+                      className="w-full h-full"
+                      selectable={false}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+            {referenceSvg && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
+                  <p className="text-xs text-muted-foreground">Selected ref(s):</p>
+                </div>
+                <div className="w-24 h-24 mx-auto bg-background rounded-lg">
+                  <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
+                    <SVGPreview
+                      svg={referenceSvg}
+                      title=""
+                      className="w-full h-full"
+                      selectable={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
