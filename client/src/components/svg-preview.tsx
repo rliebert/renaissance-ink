@@ -20,7 +20,6 @@ export function SVGPreview({
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [sanitizedSvg, setSanitizedSvg] = useState<string | null>(null);
-  const [svgViewBox, setSvgViewBox] = useState<string | null>(null);
   const [key, setKey] = useState(0);
 
   useEffect(() => {
@@ -55,8 +54,8 @@ export function SVGPreview({
         }
       }
 
-      // Add 20% padding to viewBox for animations and selection highlights
-      const padding = 0.2; // 20% padding
+      // Add padding to viewBox - use smaller padding for original view
+      const padding = selectable ? 0.1 : 0.2; // 10% padding for original view, 20% for animation preview
       const paddedX = x - width * padding;
       const paddedY = y - height * padding;
       const paddedWidth = width * (1 + 2 * padding);
