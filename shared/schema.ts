@@ -30,6 +30,7 @@ export const animations = pgTable("animations", {
   animatedSvg: text("animated_svg"),
   parameters: jsonb("parameters").$type<AnimationParams>(),
   conversation: jsonb("conversation").$type<Message[]>(),
+  explanation: text("explanation"), // Added explanation field
   error: text("error"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

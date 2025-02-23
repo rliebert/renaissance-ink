@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SVGPreview } from "@/components/svg-preview";
 import { ChatInterface } from "@/components/chat-interface";
 import { Loader2 } from "lucide-react";
+import { extractSelectedElements } from "@shared/utils";
 
 export default function Home() {
   const { toast } = useToast();
@@ -32,44 +33,41 @@ export default function Home() {
         ...data,
         selectedElements: Array.from(selectedElements),
       };
-      const res = await apiRequest("POST", "/api/animations", payload);
-      return res.json() as Promise<Animation>;
+      const response = await apiRequest("POST", "/api/animations", payload);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate animation');
+      }
+      return response.json() as Promise<Animation>;
     },
     onSuccess: (data) => {
-      if (data.error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: data.error,
-        });
-      } else {
-        // Update conversation with the new messages
-        setConversation([
-          ...conversation,
-          {
-            role: "user",
-            content: form.getValues("description"),
-            timestamp: new Date(),
-          },
-          {
-            role: "assistant",
-            content: "I've generated the animation based on your description.",
-            timestamp: new Date(),
-          },
-        ]);
-
-        toast({
-          title: "Success",
-          description: "Animation generated successfully",
-        });
-      }
+      // Add success message with explanation to conversation
+      setConversation(prev => [...prev,
+        {
+          role: "user",
+          content: form.getValues("description"),
+          timestamp: new Date(),
+        },
+        {
+          role: "assistant",
+          content: data.explanation || "I've generated the animation based on your description.",
+          timestamp: new Date(),
+        }
+      ]);
     },
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+    onError: (error: Error) => {
+      setConversation(prev => [...prev,
+        {
+          role: "user",
+          content: form.getValues("description"),
+          timestamp: new Date(),
+        },
+        {
+          role: "assistant",
+          content: `Error: ${error.message}`,
+          timestamp: new Date(),
+        }
+      ]);
     },
   });
 
@@ -86,18 +84,24 @@ export default function Home() {
   };
 
   const handleSendMessage = (content: string) => {
+    if (selectedElements.size === 0) {
+      setConversation(prev => [...prev,
+        {
+          role: "user",
+          content,
+          timestamp: new Date(),
+        },
+        {
+          role: "assistant",
+          content: "Please select at least one element to animate first.",
+          timestamp: new Date(),
+        }
+      ]);
+      return;
+    }
+
     form.setValue("description", content);
-    form.handleSubmit((data) => {
-      if (selectedElements.size === 0) {
-        toast({
-          variant: "destructive",
-          title: "No elements selected",
-          description: "Please select at least one element to animate",
-        });
-        return;
-      }
-      mutation.mutate(data);
-    })();
+    form.handleSubmit((data) => mutation.mutate(data))();
   };
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,12 +126,25 @@ export default function Home() {
       return;
     }
 
-    const text = await file.text();
-    setOriginalSvg(text);
-    form.setValue("originalSvg", text);
-    setSelectedElements(new Set());
-    setConversation([]);
+    try {
+      const text = await file.text();
+      setOriginalSvg(text);
+      form.setValue("originalSvg", text);
+      setSelectedElements(new Set());
+      setConversation([]);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error reading file",
+        description: "Failed to read the SVG file",
+      });
+    }
   };
+
+  // Get preview of selected elements
+  const selectedElementsPreview = originalSvg && selectedElements.size > 0
+    ? extractSelectedElements(originalSvg, Array.from(selectedElements))
+    : null;
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -157,13 +174,21 @@ export default function Home() {
         />
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <SVGPreview 
-            svg={originalSvg} 
-            title="Original SVG" 
-            selectable={true}
-            onElementSelect={handleElementSelect}
-            selectedElements={selectedElements}
-          />
+          <div className="space-y-8">
+            <SVGPreview 
+              svg={originalSvg} 
+              title="Original SVG" 
+              selectable={true}
+              onElementSelect={handleElementSelect}
+              selectedElements={selectedElements}
+            />
+            {selectedElementsPreview && (
+              <SVGPreview
+                svg={selectedElementsPreview}
+                title="Selected Elements Preview"
+              />
+            )}
+          </div>
 
           <ChatInterface
             messages={conversation}
