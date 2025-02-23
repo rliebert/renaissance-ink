@@ -96,26 +96,27 @@ export function ChatInterface({
                     : "bg-muted"
                 }`}
               >
-                {/* Show preview above user message if it's the latest message */}
                 {message.role === "user" && index === messages.length - 1 && previewSvg && (
                   <div className="mb-2 p-2 rounded bg-background/50">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
                       <p className="text-xs opacity-70">Elements to animate:</p>
                     </div>
-                    <div className="w-24 h-24 mx-auto">
-                      <SVGPreview
-                        svg={previewSvg}
-                        title=""
-                        className="aspect-square"
-                      />
+                    <div className="w-24 h-24 mx-auto bg-background rounded-lg">
+                      <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
+                        <SVGPreview
+                          svg={previewSvg}
+                          title=""
+                          className="w-full h-full"
+                          selectable={false}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
 
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
 
-                {/* Show animated result below assistant message */}
                 {message.role === "assistant" && index === messages.length - 1 && animatedSvg && (
                   <div className="mt-4 p-2 rounded bg-background/50">
                     <div className="flex items-center justify-between mb-2">
@@ -158,7 +159,6 @@ export function ChatInterface({
             </div>
           ))}
 
-          {/* Show loading animation */}
           {isLoading && (
             <div className="flex justify-start">
               <div className="rounded-lg px-4 py-2 bg-muted">
@@ -173,19 +173,21 @@ export function ChatInterface({
       </ScrollArea>
 
       <div className="p-4 border-t space-y-4">
-        {/* Show selected elements above input */}
         {previewSvg && (
           <div className="p-2 border rounded-lg bg-muted">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
               <p className="text-xs text-muted-foreground">Ready to animate:</p>
             </div>
-            <div className="w-24 h-24 mx-auto">
-              <SVGPreview
-                svg={previewSvg}
-                title=""
-                className="aspect-square"
-              />
+            <div className="w-24 h-24 mx-auto bg-background rounded-lg">
+              <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
+                <SVGPreview
+                  svg={previewSvg}
+                  title=""
+                  className="w-full h-full"
+                  selectable={false}
+                />
+              </div>
             </div>
           </div>
         )}
