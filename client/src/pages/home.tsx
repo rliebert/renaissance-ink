@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -10,13 +10,18 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { SVGPreview } from "@/components/svg-preview";
 import { ChatInterface } from "@/components/chat-interface";
-import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const { toast } = useToast();
   const [originalSvg, setOriginalSvg] = useState<string | null>(null);
-  const [selectedElements, setSelectedElements] = useState<Set<string>>(new Set());
+  const [selectedElements, setSelectedElements] = useState<string[]>([]);
   const [conversation, setConversation] = useState<Message[]>([]);
+
+  // Memoize selected elements for stable query key
+  const selectedElementsKey = useMemo(
+    () => selectedElements.sort().join(','),
+    [selectedElements]
+  );
 
   const form = useForm({
     resolver: zodResolver(insertAnimationSchema),
@@ -28,27 +33,37 @@ export default function Home() {
 
   // Query for selected elements preview
   const previewQuery = useQuery({
-    queryKey: ['svg-preview', originalSvg, Array.from(selectedElements)],
+    queryKey: ['svg-preview', selectedElementsKey],
     queryFn: async () => {
-      if (!originalSvg || selectedElements.size === 0) return null;
-      const response = await apiRequest("POST", "/api/svg/preview", {
-        svgContent: originalSvg,
-        selectedElements: Array.from(selectedElements)
-      });
-      if (!response.ok) {
-        throw new Error('Failed to generate preview');
+      if (!originalSvg || selectedElements.length === 0) {
+        return null;
       }
-      const data = await response.json();
-      return data.preview as string;
+
+      try {
+        const response = await apiRequest("POST", "/api/svg/preview", {
+          svgContent: originalSvg,
+          selectedElements
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate preview');
+        }
+
+        const data = await response.json();
+        return data.preview as string;
+      } catch (error) {
+        console.error('Preview generation error:', error);
+        return null;
+      }
     },
-    enabled: !!originalSvg && selectedElements.size > 0
+    enabled: !!originalSvg && selectedElements.length > 0
   });
 
   const mutation = useMutation({
     mutationFn: async (data: { originalSvg: string; description: string }) => {
       const payload = {
         ...data,
-        selectedElements: Array.from(selectedElements),
+        selectedElements,
       };
       const response = await apiRequest("POST", "/api/animations", payload);
       if (!response.ok) {
@@ -87,20 +102,17 @@ export default function Home() {
     },
   });
 
-  const handleElementSelect = (elementId: string) => {
+  const handleElementSelect = useCallback((elementId: string) => {
     setSelectedElements(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(elementId)) {
-        newSet.delete(elementId);
-      } else {
-        newSet.add(elementId);
-      }
-      return newSet;
+      const index = prev.indexOf(elementId);
+      return index >= 0 
+        ? prev.filter(id => id !== elementId)
+        : [...prev, elementId];
     });
-  };
+  }, []);
 
   const handleSendMessage = (content: string) => {
-    if (selectedElements.size === 0) {
+    if (selectedElements.length === 0) {
       setConversation(prev => [...prev,
         {
           role: "user",
@@ -146,7 +158,7 @@ export default function Home() {
       const text = await file.text();
       setOriginalSvg(text);
       form.setValue("originalSvg", text);
-      setSelectedElements(new Set());
+      setSelectedElements([]);
       setConversation([]);
     } catch (error) {
       toast({
