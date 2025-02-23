@@ -141,10 +141,11 @@ CRITICAL REQUIREMENTS:
 2. Do NOT use ANY comments or omissions
 3. Preserve the EXACT XML declaration
 4. Maintain ALL original attributes in the svg tag
-5. Add animation elements to the group with id="animated-group"
-6. Keep ALL original elements exactly as they are
-7. No markdown, no code blocks, no explanations - just pure SVG code
-8. NEVER truncate or omit any content`
+5. Add animation elements (<animate>, <animateTransform>, etc.) to existing paths
+6. Keep ALL original IDs, classes, and styles
+7. Ensure the SVG structure matches the original EXACTLY
+8. No markdown, no code blocks, no explanations - just pure SVG code
+9. NEVER truncate or omit any content`
         },
         {
           role: "user",
@@ -152,7 +153,7 @@ CRITICAL REQUIREMENTS:
 
 ${wrappedSvg}
 
-Return the complete SVG with the animation applied to the main group. Do not modify individual elements.`
+Return the complete SVG with ALL original elements and added animations. Do not modify individual elements.`
         }
       ],
       temperature: 0.7,
