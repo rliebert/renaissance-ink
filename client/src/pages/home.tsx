@@ -11,10 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { SVGPreview } from "@/components/svg-preview";
 import { ChatInterface } from "@/components/chat-interface";
 
+type SelectionMode = 'animate' | 'reference';
+
 export default function Home() {
   const { toast } = useToast();
   const [originalSvg, setOriginalSvg] = useState<string | null>(null);
   const [selectedElements, setSelectedElements] = useState<string[]>([]);
+  const [referenceElements, setReferenceElements] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>('animate');
   const [conversation, setConversation] = useState<Message[]>([]);
 
   // Memoize selected elements for stable query key
@@ -64,6 +68,7 @@ export default function Home() {
       const payload = {
         ...data,
         selectedElements,
+        referenceElements,
       };
       const response = await apiRequest("POST", "/api/animations", payload);
       if (!response.ok) {
@@ -103,13 +108,40 @@ export default function Home() {
   });
 
   const handleElementSelect = useCallback((elementId: string) => {
-    setSelectedElements(prev => {
-      const index = prev.indexOf(elementId);
-      return index >= 0 
-        ? prev.filter(id => id !== elementId)
-        : [...prev, elementId];
-    });
-  }, []);
+    // Don't allow the same element to be both animated and referenced
+    if (selectionMode === 'animate' && referenceElements.includes(elementId)) {
+      toast({
+        variant: "destructive",
+        title: "Element already selected",
+        description: "This element is already selected as a reference point",
+      });
+      return;
+    }
+    if (selectionMode === 'reference' && selectedElements.includes(elementId)) {
+      toast({
+        variant: "destructive",
+        title: "Element already selected",
+        description: "This element is already selected for animation",
+      });
+      return;
+    }
+
+    if (selectionMode === 'animate') {
+      setSelectedElements(prev => {
+        const index = prev.indexOf(elementId);
+        return index >= 0 
+          ? prev.filter(id => id !== elementId)
+          : [...prev, elementId];
+      });
+    } else {
+      setReferenceElements(prev => {
+        const index = prev.indexOf(elementId);
+        return index >= 0 
+          ? prev.filter(id => id !== elementId)
+          : [...prev, elementId];
+      });
+    }
+  }, [selectionMode, selectedElements, referenceElements, toast]);
 
   const handleSendMessage = (content: string) => {
     if (selectedElements.length === 0) {
@@ -159,6 +191,7 @@ export default function Home() {
       setOriginalSvg(text);
       form.setValue("originalSvg", text);
       setSelectedElements([]);
+      setReferenceElements([]);
       setConversation([]);
     } catch (error) {
       toast({
@@ -184,6 +217,7 @@ export default function Home() {
           <ul className="list-disc list-inside space-y-1 text-muted-foreground">
             <li>Click on SVG elements to select them for animation</li>
             <li>Selected elements will be highlighted in blue</li>
+            <li>Reference elements will be highlighted in green</li>
             <li>Keep file size under 2MB</li>
             <li>Provide clear animation instructions in the chat</li>
           </ul>
@@ -197,13 +231,30 @@ export default function Home() {
         />
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <div>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant={selectionMode === 'animate' ? 'default' : 'outline'}
+                onClick={() => setSelectionMode('animate')}
+              >
+                Select for Animation
+              </Button>
+              <Button
+                variant={selectionMode === 'reference' ? 'default' : 'outline'}
+                onClick={() => setSelectionMode('reference')}
+              >
+                Add Reference Point
+              </Button>
+            </div>
+
             <SVGPreview
               svg={originalSvg}
               title="Original SVG"
               selectable={true}
               onElementSelect={handleElementSelect}
               selectedElements={selectedElements}
+              referenceElements={referenceElements}
+              selectionMode={selectionMode}
             />
           </div>
 
@@ -225,6 +276,7 @@ export default function Home() {
               {mutation.variables ? JSON.stringify({
                 description: mutation.variables.description,
                 selectedElements: Array.from(selectedElements),
+                referenceElements: Array.from(referenceElements),
               }, null, 2) : 'No prompt sent yet'}
             </pre>
           </div>

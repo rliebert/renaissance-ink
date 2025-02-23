@@ -7,13 +7,17 @@ interface SVGPreviewProps {
   selectable?: boolean;
   onElementSelect?: (elementId: string) => void;
   selectedElements?: string[];
+  referenceElements?: string[];
+  selectionMode?: 'animate' | 'reference';
   className?: string;
 }
 
 function processSvg(
   svg: string | null,
   selectable: boolean,
-  selectedElements: string[]
+  selectedElements: string[],
+  referenceElements: string[],
+  selectionMode: 'animate' | 'reference'
 ): { svg: string | null; error: string | null } {
   if (!svg) return { svg: null, error: null };
 
@@ -76,16 +80,27 @@ function processSvg(
 
           const id = idMatch[1];
           const isSelected = selectedElements.includes(id);
+          const isReference = referenceElements.includes(id);
+          const isSelectable = !isReference && selectionMode === 'animate' || !isSelected && selectionMode === 'reference';
 
           const styleMatch = attributes.match(/style="([^"]+)"/);
           const existingStyles = styleMatch ? styleMatch[1] : '';
 
           let newStyles = existingStyles;
-          newStyles += '; pointer-events: all !important; cursor: pointer !important;';
+          if (isSelectable) {
+            newStyles += '; pointer-events: all !important; cursor: pointer !important;';
+          }
 
           if (isSelected) {
             newStyles += `
               ; stroke: #4299e1 !important
+              ; stroke-width: 2 !important
+              ; stroke-opacity: 1 !important
+              ; fill-opacity: 0.8 !important
+            `;
+          } else if (isReference) {
+            newStyles += `
+              ; stroke: #10b981 !important
               ; stroke-width: 2 !important
               ; stroke-opacity: 1 !important
               ; fill-opacity: 0.8 !important
@@ -117,13 +132,15 @@ export function SVGPreview({
   selectable = false,
   onElementSelect,
   selectedElements = [],
+  referenceElements = [],
+  selectionMode = 'animate',
   className = ""
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
 
   const { svg: processedSvg, error: processError } = useMemo(() => {
-    return processSvg(svg, selectable, selectedElements);
-  }, [svg, selectable, selectedElements]);
+    return processSvg(svg, selectable, selectedElements, referenceElements, selectionMode);
+  }, [svg, selectable, selectedElements, referenceElements, selectionMode]);
 
   useMemo(() => {
     setError(processError);
@@ -152,7 +169,9 @@ export function SVGPreview({
           <h3 className="font-medium text-lg">{title}</h3>
           {selectable && (
             <p className="text-sm text-muted-foreground">
-              Click on elements to select them for animation
+              {selectionMode === 'animate' 
+                ? "Click on elements to select them for animation"
+                : "Click on elements to add reference points"}
             </p>
           )}
         </div>
