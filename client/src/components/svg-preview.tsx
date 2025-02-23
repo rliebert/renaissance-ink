@@ -53,24 +53,27 @@ export function SVGPreview({
               console.log(`Processing element ${id}, selected:`, isSelected);
 
               // Add selection styles that combine both stroke and outline for better visibility
-              const selectionStyles = isSelected ? `
-                stroke: #4299e1 !important;
-                stroke-width: 2px !important;
-                stroke-opacity: 1 !important;
-                outline: 2px solid #4299e1 !important;
-                outline-offset: 2px !important;
-                pointer-events: all !important;
-              ` : '';
+              const selectionStyles = isSelected ? 
+                `stroke: #4299e1 !important; 
+                 stroke-width: 2px !important; 
+                 stroke-opacity: 1 !important; 
+                 filter: drop-shadow(0 0 2px #4299e1) !important;
+                 pointer-events: all !important;` 
+                : '';
 
               // Clean up existing styles
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
-              // Combine cursor style with selection styles
-              const styles = `cursor: pointer !important; ${selectionStyles}`.trim();
+              // Build the style attribute with cursor and selection styles
+              const styles = `pointer-events: all; cursor: pointer !important; ${selectionStyles}`.trim();
 
               const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${styles}" ${cleanedAfterId}>`;
-              console.log('Generated element:', result);
+              console.log('Styled element:', {
+                id,
+                isSelected,
+                appliedStyles: styles
+              });
               return result;
             }
           );
