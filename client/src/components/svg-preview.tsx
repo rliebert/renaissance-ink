@@ -59,24 +59,38 @@ export function SVGPreview({
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
-              // Add selection styles that combine both stroke and outline for better visibility
-              const selectionStyles = isSelected ? 
-                `stroke: #4299e1 !important; 
-                 stroke-width: 2px !important; 
-                 stroke-opacity: 1 !important;
-                 filter: drop-shadow(0 0 2px #4299e1) !important;
-                 pointer-events: all !important;` 
-                : '';
+              // Build the selection styles - use direct SVG attributes for better visibility
+              let styles = `pointer-events: all; cursor: pointer;`;
 
-              // Build the style attribute with cursor and selection styles
-              const styles = `pointer-events: all; cursor: pointer !important; ${selectionStyles}`.trim();
+              // If selected, add strong visual feedback
+              if (isSelected) {
+                // Add a glowing effect using SVG specific attributes
+                styles += `
+                  stroke: #4299e1;
+                  stroke-width: 3;
+                  stroke-opacity: 1;
+                  fill-opacity: 0.9;
+                `;
+              }
 
               const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${styles}" ${cleanedAfterId}>`;
-              console.log('Styled element:', {
-                id,
-                isSelected,
-                appliedStyles: styles
-              });
+
+              // If selected, add a duplicate element for highlight effect
+              if (isSelected) {
+                return `
+                  <g>
+                    ${result}
+                    <${tagName} ${cleanedBeforeId} style="
+                      pointer-events: none;
+                      fill: none;
+                      stroke: #4299e1;
+                      stroke-width: 5;
+                      stroke-opacity: 0.3;
+                    " ${cleanedAfterId}>
+                  </g>
+                `;
+              }
+
               return result;
             }
           );
@@ -87,14 +101,13 @@ export function SVGPreview({
 
       setSanitizedSvg(processedSvg);
       setError(null);
-      // Force re-render after processing
       setKey(prev => prev + 1);
     } catch (err) {
       console.error('SVG Processing Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process SVG');
       setSanitizedSvg(null);
     }
-  }, [svg, selectable, selectedElements]); // Re-run when selectedElements changes
+  }, [svg, selectable, selectedElements]);
 
   const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
     let current: HTMLElement | null = element;
