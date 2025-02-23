@@ -19,6 +19,124 @@ interface AnimationResponse {
   explanation: string;
 }
 
+interface AnimationElement {
+  elementId: string;
+  animations: string[];  // Array of SMIL animation elements to be added
+}
+
+function insertAnimations(svgContent: string, animationElements: AnimationElement[]): string {
+  const dom = new JSDOM(svgContent);
+  const document = dom.window.document;
+
+  // Get or create defs element for storing animation definitions
+  const svg = document.querySelector('svg');
+  if (!svg) throw new Error("Invalid SVG: no svg element found");
+
+  let defs = document.querySelector('defs');
+  if (!defs) {
+    defs = document.createElement('defs');
+    svg.insertBefore(defs, svg.firstChild);
+  }
+
+  // Process each element's animations
+  for (const { elementId, animations } of animationElements) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      // Add each animation to the element
+      for (const animation of animations) {
+        const template = document.createElement('template');
+        template.innerHTML = animation.trim();
+        element.appendChild(template.content.firstChild);
+      }
+    }
+  }
+
+  return document.querySelector('svg')?.outerHTML || '';
+}
+
+export async function generateAnimation(request: AnimationRequest): Promise<AnimationResponse> {
+  try {
+    // Create a focused prompt that describes the elements to animate
+    const elementsContext = request.selectedElements
+      .map(id => {
+        const dom = new JSDOM(request.svgContent);
+        const element = dom.window.document.getElementById(id);
+        return element ? `#${id} (${element.tagName.toLowerCase()})` : `#${id}`;
+      })
+      .join(', ');
+
+    // Include previous conversation context
+    const conversationContext = request.conversation?.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    })) || [];
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert in SVG SMIL animations. Your task is to generate animation elements for specific SVG elements.
+Return a JSON object with an 'animations' array containing objects with:
+- elementId: the ID of the element to animate
+- animations: array of SMIL animation strings to add to that element
+Example format:
+{
+  "animations": [
+    {
+      "elementId": "circle1",
+      "animations": [
+        "<animate attributeName='r' values='20;40;20' dur='2s' repeatCount='indefinite'/>",
+        "<animateTransform attributeName='transform' type='rotate' from='0' to='360' dur='3s' repeatCount='indefinite'/>"
+      ]
+    }
+  ],
+  "parameters": {
+    "duration": 2,
+    "easing": "ease",
+    "repeat": 0,
+    "direction": "normal"
+  },
+  "explanation": "Brief description of the animation approach"
+}`
+        },
+        ...conversationContext,
+        {
+          role: "user",
+          content: `Create SMIL animations for these elements: ${elementsContext}
+Animation description: ${request.description}
+${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)}` : ''}`
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("No content received from OpenAI");
+    }
+
+    const result = JSON.parse(content);
+
+    // Insert the animations into the original SVG
+    const animatedSvg = insertAnimations(request.svgContent, result.animations);
+
+    return {
+      animatedSvg,
+      suggestedParams: {
+        duration: result.parameters?.duration || 1,
+        easing: result.parameters?.easing || 'ease',
+        repeat: result.parameters?.repeat || 0,
+        direction: result.parameters?.direction || 'normal'
+      },
+      explanation: result.explanation
+    };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to generate animation: ${errorMessage}`);
+  }
+}
+
 function extractSelectedElements(svgContent: string, elementIds: string[]): string {
   const dom = new JSDOM(svgContent);
   const document = dom.window.document;
@@ -47,91 +165,4 @@ function extractSelectedElements(svgContent: string, elementIds: string[]): stri
   }
 
   return minimalSvg.outerHTML;
-}
-
-function mergeAnimatedElements(originalSvg: string, animatedElements: string): string {
-  const dom = new JSDOM(originalSvg);
-  const document = dom.window.document;
-
-  // Parse animated elements
-  const animatedDom = new JSDOM(animatedElements);
-  const animatedDoc = animatedDom.window.document;
-
-  // Extract animation definitions
-  const defs = animatedDoc.querySelector('defs');
-  if (defs) {
-    const originalDefs = document.querySelector('defs') || document.querySelector('svg').appendChild(document.createElement('defs'));
-    originalDefs.innerHTML += defs.innerHTML;
-  }
-
-  // Replace original elements with animated versions
-  const animatedElements = animatedDoc.querySelectorAll('[id]');
-  animatedElements.forEach(animatedEl => {
-    const id = animatedEl.getAttribute('id');
-    const originalEl = document.getElementById(id);
-    if (originalEl) {
-      originalEl.parentNode.replaceChild(document.importNode(animatedEl, true), originalEl);
-    }
-  });
-
-  return document.querySelector('svg').outerHTML;
-}
-
-export async function generateAnimation(request: AnimationRequest): Promise<AnimationResponse> {
-  try {
-    // Extract only selected elements
-    const minimalSvg = extractSelectedElements(request.svgContent, request.selectedElements);
-
-    // Include previous conversation context
-    const conversationContext = request.conversation?.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    })) || [];
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert in SVG animations. Your task is to add SMIL animations to the provided SVG elements.
-Return a valid SVG with animations in JSON format. Focus only on animating the provided elements.
-Important: Preserve all element IDs and attributes.`
-        },
-        ...conversationContext,
-        {
-          role: "user",
-          content: JSON.stringify({
-            svg: minimalSvg,
-            description: request.description,
-            currentParams: request.parameters
-          })
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error("No content received from OpenAI");
-    }
-
-    const result = JSON.parse(content);
-
-    // Merge animated elements back into original SVG
-    const finalSvg = mergeAnimatedElements(request.svgContent, result.animatedSvg);
-
-    return {
-      animatedSvg: finalSvg,
-      suggestedParams: {
-        duration: result.parameters?.duration || 1,
-        easing: result.parameters?.easing || 'ease',
-        repeat: result.parameters?.repeat || 0,
-        direction: result.parameters?.direction || 'normal'
-      },
-      explanation: result.explanation
-    };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to generate animation: ${errorMessage}`);
-  }
 }
