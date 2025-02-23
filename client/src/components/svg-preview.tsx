@@ -67,10 +67,14 @@ export function SVGPreview({
             const id = idMatch[1];
             const isSelected = selectedElements.has(id);
 
-            // Add selectable attribute and styling
+            // Preserve existing style attribute if present
+            const existingStyle = match.match(/style="([^"]*)"/)?.[1] || '';
+            const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer;${isSelected ? ' stroke: #4299e1; stroke-width: 2;' : ''}`;
+
+            // Add selectable attribute and styling while preserving original attributes
             return match.replace(
-              '>',
-              ` style="cursor: pointer; ${isSelected ? 'stroke: #4299e1; stroke-width: 2;' : ''}" data-selectable="true">`
+              /(\s*)(\/?>|>)$/,
+              ` style="${combinedStyle}" data-selectable="true"$2`
             );
           }
         );
