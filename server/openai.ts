@@ -34,7 +34,7 @@ function validateSvgStructure(svg: string, originalSvg: string): string {
     throw new Error("Invalid SVG: missing svg tag");
   }
 
-  // Extract attributes using regular expressions without spread operator
+  // Extract attributes using regular expressions
   const originalAttrs: Record<string, string> = {};
   const originalMatches = Array.from(originalSvgTag.matchAll(/(\w+:?\w+)="([^"]*)"/g));
   originalMatches.forEach(m => originalAttrs[m[1]] = m[2]);
@@ -82,13 +82,41 @@ function verifyCompleteSvg(svg: string): boolean {
          openCount.length === closeCount;
 }
 
+function wrapSvgContentsInGroup(svg: string): string {
+  // Find the position after the opening SVG tag
+  const svgOpenMatch = svg.match(/<svg[^>]*>/);
+  if (!svgOpenMatch) return svg;
+
+  const contentStart = svgOpenMatch.index! + svgOpenMatch[0].length;
+  const contentEnd = svg.lastIndexOf('</svg>');
+
+  if (contentEnd === -1) return svg;
+
+  // Extract the content
+  const content = svg.slice(contentStart, contentEnd);
+
+  // Skip if content is already wrapped in a single group
+  if (content.trim().startsWith('<g') && content.trim().endsWith('</g>')) {
+    return svg;
+  }
+
+  // Wrap content in a new group with a unique ID
+  const wrappedContent = `<g id="animated-group">${content}</g>`;
+
+  // Reconstruct the SVG
+  return svg.slice(0, contentStart) + wrappedContent + '</svg>';
+}
+
 export async function generateSvgAnimation(svg: string, description: string): Promise<string> {
   try {
     // Clean up SVG before processing
     const cleanedSvg = cleanupSvg(svg);
 
+    // Wrap SVG contents in a group for unified animation
+    const wrappedSvg = wrapSvgContentsInGroup(cleanedSvg);
+
     // Token estimation
-    const svgTokens = Math.ceil(cleanedSvg.length / 3);
+    const svgTokens = Math.ceil(wrappedSvg.length / 3);
     const descriptionTokens = Math.ceil(description.length / 4);
     const totalTokens = svgTokens + descriptionTokens;
 
@@ -110,22 +138,21 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
           content: `You are an expert autonomous programmer specializing in SVG animations.
 CRITICAL REQUIREMENTS:
 1. Return ONLY the complete SVG code with animations
-2. Do NOT use ANY comments or omissions - include every single path and element
-3. Preserve the EXACT XML declaration from the original SVG
-4. Maintain ALL original attributes and namespaces in the svg tag
-5. Only add animation elements (<animate>, <animateTransform>, etc.) to existing paths
-6. Keep ALL original IDs, classes, and styles
-7. Ensure the SVG structure matches the original EXACTLY
-8. No markdown, no code blocks, no explanations - just pure SVG code
-9. Do NOT truncate or omit any parts of the SVG`
+2. Do NOT use ANY comments or omissions
+3. Preserve the EXACT XML declaration
+4. Maintain ALL original attributes in the svg tag
+5. Add animation elements to the group with id="animated-group"
+6. Keep ALL original elements exactly as they are
+7. No markdown, no code blocks, no explanations - just pure SVG code
+8. NEVER truncate or omit any content`
         },
         {
           role: "user",
-          content: `Animate this SVG according to this description: "${description}"
+          content: `Apply this animation to the entire SVG content (the group with id="animated-group"): "${description}"
 
-${cleanedSvg}
+${wrappedSvg}
 
-Return the complete SVG with ALL original elements and added animations. Do not truncate or omit any content.`
+Return the complete SVG with the animation applied to the main group. Do not modify individual elements.`
         }
       ],
       temperature: 0.7,
