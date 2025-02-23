@@ -185,7 +185,7 @@ export default function Home() {
         />
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <div className="space-y-8">
+          <div>
             <SVGPreview
               svg={originalSvg}
               title="Original SVG"
@@ -193,12 +193,6 @@ export default function Home() {
               onElementSelect={handleElementSelect}
               selectedElements={selectedElements}
             />
-            {previewQuery.data && (
-              <SVGPreview
-                svg={previewQuery.data}
-                title="Selected Elements Preview"
-              />
-            )}
           </div>
 
           <ChatInterface
@@ -208,6 +202,29 @@ export default function Home() {
             animatedSvg={mutation.data?.animatedSvg}
             previewSvg={previewQuery.data}
           />
+        </div>
+
+        {/* Debug information */}
+        <div className="mt-8 p-4 bg-muted rounded-lg space-y-4">
+          <h3 className="font-semibold">Debug Information</h3>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Last OpenAI Prompt:</p>
+            <pre className="bg-background p-2 rounded text-xs overflow-x-auto">
+              {mutation.variables ? JSON.stringify({
+                description: mutation.variables.description,
+                selectedElements: Array.from(selectedElements),
+              }, null, 2) : 'No prompt sent yet'}
+            </pre>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Last OpenAI Response:</p>
+            <pre className="bg-background p-2 rounded text-xs overflow-x-auto">
+              {mutation.data ? JSON.stringify({
+                animatedSvg: mutation.data.animatedSvg?.substring(0, 100) + '...',
+                explanation: mutation.data.explanation,
+              }, null, 2) : 'No response yet'}
+            </pre>
+          </div>
         </div>
       </div>
     </div>
