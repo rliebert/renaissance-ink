@@ -2,21 +2,21 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { insertAnimationSchema, type Animation } from "@shared/schema";
+import { insertAnimationSchema, type Animation, type Message } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { SVGPreview } from "@/components/svg-preview";
-import { CodeDisplay } from "@/components/code-display";
+import { ChatInterface } from "@/components/chat-interface";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const { toast } = useToast();
   const [originalSvg, setOriginalSvg] = useState<string | null>(null);
   const [selectedElements, setSelectedElements] = useState<Set<string>>(new Set());
+  const [conversation, setConversation] = useState<Message[]>([]);
 
   const form = useForm({
     resolver: zodResolver(insertAnimationSchema),
@@ -43,6 +43,21 @@ export default function Home() {
           description: data.error,
         });
       } else {
+        // Update conversation with the new messages
+        setConversation([
+          ...conversation,
+          {
+            role: "user",
+            content: form.getValues("description"),
+            timestamp: new Date(),
+          },
+          {
+            role: "assistant",
+            content: "I've generated the animation based on your description.",
+            timestamp: new Date(),
+          },
+        ]);
+
         toast({
           title: "Success",
           description: "Animation generated successfully",
@@ -70,6 +85,21 @@ export default function Home() {
     });
   };
 
+  const handleSendMessage = (content: string) => {
+    form.setValue("description", content);
+    form.handleSubmit((data) => {
+      if (selectedElements.size === 0) {
+        toast({
+          variant: "destructive",
+          title: "No elements selected",
+          description: "Please select at least one element to animate",
+        });
+        return;
+      }
+      mutation.mutate(data);
+    })();
+  };
+
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -95,23 +125,12 @@ export default function Home() {
     const text = await file.text();
     setOriginalSvg(text);
     form.setValue("originalSvg", text);
-    setSelectedElements(new Set()); // Clear selections when new file is uploaded
+    setSelectedElements(new Set());
+    setConversation([]);
   };
 
-  const onSubmit = form.handleSubmit((data) => {
-    if (selectedElements.size === 0) {
-      toast({
-        variant: "destructive",
-        title: "No elements selected",
-        description: "Please select at least one element to animate",
-      });
-      return;
-    }
-    mutation.mutate(data);
-  });
-
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
+    <div className="container mx-auto py-8 px-4">
       <div className="space-y-8">
         <div>
           <h1 className="text-4xl font-bold mb-2">SVG Animation Generator</h1>
@@ -126,54 +145,38 @@ export default function Home() {
             <li>Click on SVG elements to select them for animation</li>
             <li>Selected elements will be highlighted in blue</li>
             <li>Keep file size under 2MB</li>
-            <li>Provide clear animation instructions in the description</li>
+            <li>Provide clear animation instructions in the chat</li>
           </ul>
         </div>
 
-        <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-6">
-            <div>
-              <Input
-                type="file"
-                accept=".svg"
-                onChange={onFileChange}
-                className="mb-4"
-              />
-              <Textarea
-                placeholder="Describe how you want the selected elements to be animated... (e.g., 'Make the selected elements rotate and fade out')"
-                {...form.register("description")}
-                className="min-h-[100px]"
-              />
-            </div>
+        <Input
+          type="file"
+          accept=".svg"
+          onChange={onFileChange}
+          className="w-full"
+        />
 
-            <Button
-              type="submit"
-              disabled={mutation.isPending || selectedElements.size === 0}
-              className="w-full sm:w-auto"
-            >
-              {mutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Generate Animation
-            </Button>
-          </form>
-        </Form>
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="space-y-8">
+            <SVGPreview 
+              svg={originalSvg} 
+              title="Original SVG" 
+              selectable={true}
+              onElementSelect={handleElementSelect}
+              selectedElements={selectedElements}
+            />
+            <SVGPreview
+              svg={mutation.data?.animatedSvg || null}
+              title="Animated Preview"
+            />
+          </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          <SVGPreview 
-            svg={originalSvg} 
-            title="Original SVG" 
-            selectable={true}
-            onElementSelect={handleElementSelect}
-            selectedElements={selectedElements}
-          />
-          <SVGPreview
-            svg={mutation.data?.animatedSvg || null}
-            title="Animated Preview"
+          <ChatInterface
+            messages={conversation}
+            onSendMessage={handleSendMessage}
+            isLoading={mutation.isPending}
           />
         </div>
-
-        <CodeDisplay code={mutation.data?.animatedSvg || null} />
       </div>
     </div>
   );
