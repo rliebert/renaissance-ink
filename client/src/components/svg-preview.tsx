@@ -111,20 +111,28 @@ export function SVGPreview({
           }
 
           const parentVisible = visibilityStack[visibilityStack.length - 1];
-          if (!parentVisible || !line.match(/<(?:path|circle|rect|ellipse|polygon|polyline|line)/) || isHidden(line)) {
+          if (!parentVisible || isHidden(line)) {
             return line;
           }
 
           // Make visible elements with IDs selectable
           return line.replace(
-            /(<(?:path|circle|rect|ellipse|polygon|polyline|line)[^>]*?)(id="[^"]*")([^>]*>)/,
+            /(<(?:path|circle|rect|ellipse|polygon|polyline|line)[^>]*?)(id="[^"]*")([^>]*?>)/g,
             (match, prefix, idAttr, suffix) => {
               const id = idAttr.split('"')[1];
               const isSelected = selectedElements.has(id);
 
-              // Preserve existing style
-              const existingStyle = match.match(/style="([^"]*)"/)?.[1] || '';
-              const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer;${isSelected ? ' stroke: #4299e1; stroke-width: 2;' : ''}`;
+              // Preserve existing style while adding selection styles
+              let existingStyle = match.match(/style="([^"]*)"/)?.[1] || '';
+              if (existingStyle) {
+                existingStyle = existingStyle.replace(/cursor:\s*pointer;?\s*/, '');
+                existingStyle = existingStyle.replace(/stroke:\s*#4299e1;?\s*/, '');
+                existingStyle = existingStyle.replace(/stroke-width:\s*2;?\s*/, '');
+                existingStyle = existingStyle.trim();
+              }
+
+              const selectionStyle = isSelected ? 'stroke: #4299e1; stroke-width: 2;' : '';
+              const combinedStyle = `${existingStyle}${existingStyle ? '; ' : ''}cursor: pointer; ${selectionStyle}`.trim();
 
               return `${prefix}${idAttr} style="${combinedStyle}" data-selectable="true"${suffix}`;
             }
@@ -137,6 +145,7 @@ export function SVGPreview({
       setSanitizedSvg(processedSvg);
       setError(null);
     } catch (err) {
+      console.error('SVG Processing Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process SVG');
       setSanitizedSvg(null);
     }
@@ -146,9 +155,14 @@ export function SVGPreview({
     if (!selectable || !onElementSelect) return;
 
     const target = event.target as HTMLElement;
+    console.log('Click target:', target);
+    console.log('Is selectable:', target.getAttribute('data-selectable'));
+    console.log('Element ID:', target.getAttribute('id'));
+
     if (target.getAttribute('data-selectable') === 'true') {
       const id = target.getAttribute('id');
       if (id) {
+        console.log('Selecting element:', id);
         onElementSelect(id);
       }
     }
