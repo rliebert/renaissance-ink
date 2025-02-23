@@ -26,7 +26,8 @@ export async function registerRoutes(app: Express) {
       try {
         const animatedSvg = await generateSvgAnimation(
           data.originalSvg,
-          data.description
+          data.description,
+          data.selectedElements
         );
         const updated = await storage.updateAnimation(animation.id, animatedSvg);
         res.json(updated);

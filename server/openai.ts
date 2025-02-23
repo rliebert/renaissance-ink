@@ -82,41 +82,22 @@ function verifyCompleteSvg(svg: string): boolean {
          openCount.length === closeCount;
 }
 
-function wrapSvgContentsInGroup(svg: string): string {
-  // Find the position after the opening SVG tag
-  const svgOpenMatch = svg.match(/<svg[^>]*>/);
-  if (!svgOpenMatch) return svg;
-
-  const contentStart = svgOpenMatch.index! + svgOpenMatch[0].length;
-  const contentEnd = svg.lastIndexOf('</svg>');
-
-  if (contentEnd === -1) return svg;
-
-  // Extract the content
-  const content = svg.slice(contentStart, contentEnd);
-
-  // Skip if content is already wrapped in a single group
-  if (content.trim().startsWith('<g') && content.trim().endsWith('</g>')) {
-    return svg;
-  }
-
-  // Wrap content in a new group with a unique ID
-  const wrappedContent = `<g id="animated-group">${content}</g>`;
-
-  // Reconstruct the SVG
-  return svg.slice(0, contentStart) + wrappedContent + '</svg>';
-}
-
-export async function generateSvgAnimation(svg: string, description: string): Promise<string> {
+export async function generateSvgAnimation(
+  svg: string, 
+  description: string,
+  selectedElements: string[] = []
+): Promise<string> {
   try {
     // Clean up SVG before processing
     const cleanedSvg = cleanupSvg(svg);
 
-    // Wrap SVG contents in a group for unified animation
-    const wrappedSvg = wrapSvgContentsInGroup(cleanedSvg);
+    // Create a more focused prompt based on selected elements
+    const elementsList = selectedElements.length > 0 
+      ? selectedElements.map(id => `#${id}`).join(', ')
+      : 'all elements';
 
     // Token estimation
-    const svgTokens = Math.ceil(wrappedSvg.length / 3);
+    const svgTokens = Math.ceil(cleanedSvg.length / 3);
     const descriptionTokens = Math.ceil(description.length / 4);
     const totalTokens = svgTokens + descriptionTokens;
 
@@ -141,19 +122,18 @@ CRITICAL REQUIREMENTS:
 2. Do NOT use ANY comments or omissions
 3. Preserve the EXACT XML declaration
 4. Maintain ALL original attributes in the svg tag
-5. Add animation elements (<animate>, <animateTransform>, etc.) to existing paths
-6. Keep ALL original IDs, classes, and styles
-7. Ensure the SVG structure matches the original EXACTLY
-8. No markdown, no code blocks, no explanations - just pure SVG code
-9. NEVER truncate or omit any content`
+5. Add animation elements ONLY to the specified elements: ${elementsList}
+6. Keep ALL original elements exactly as they are
+7. No markdown, no code blocks, no explanations - just pure SVG code
+8. NEVER truncate or omit any content`
         },
         {
           role: "user",
-          content: `Apply this animation to the entire SVG content (the group with id="animated-group"): "${description}"
+          content: `Apply this animation to these elements (${elementsList}): "${description}"
 
-${wrappedSvg}
+${cleanedSvg}
 
-Return the complete SVG with ALL original elements and added animations. Do not modify individual elements.`
+Return the complete SVG with animations applied only to the specified elements.`
         }
       ],
       temperature: 0.7,
