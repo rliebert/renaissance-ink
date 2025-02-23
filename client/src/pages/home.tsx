@@ -112,6 +112,9 @@ export default function Home() {
       return response.json() as Promise<Animation>;
     },
     onSuccess: (data) => {
+      // Reset selections after successful mutation
+      setSelectedElements([]);
+      setReferenceElements([]);
       setConversation(prev => [...prev,
         {
           role: "user",
