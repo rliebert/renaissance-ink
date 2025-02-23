@@ -81,10 +81,14 @@ export async function generateSvgAnimation(svg: string, description: string): Pr
     // Clean up SVG before processing
     const cleanedSvg = cleanupSvg(svg);
 
-    // Rough token estimation (4 chars ≈ 1 token)
-    const estimatedTokens = (cleanedSvg.length + description.length) / 4;
-    if (estimatedTokens > 6000) { // Leave room for system message and response
-      throw new Error("SVG file is too large. Please use a simpler SVG file.");
+    // More accurate token estimation (1 token ≈ 4 chars for English, but SVG might be denser)
+    const svgTokens = Math.ceil(cleanedSvg.length / 3); // More conservative estimate for SVG
+    const descriptionTokens = Math.ceil(description.length / 4);
+    const totalTokens = svgTokens + descriptionTokens;
+
+    // GPT-4's context window is 8192 tokens, leave room for system message and response
+    if (totalTokens > 7000) {
+      throw new Error("SVG file is too complex. Please simplify the SVG or break it into smaller parts.");
     }
 
     const response = await openai.chat.completions.create({
