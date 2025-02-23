@@ -38,7 +38,7 @@ export function SVGPreview({
         processedSvg = processedSvg.replace('<svg', '<svg width="100%" height="100%"');
       }
 
-      // If selectable, add click handlers to visible SVG elements
+      // If selectable, first remove hidden elements, then make visible ones selectable
       if (selectable) {
         // First, make all elements unselectable by default
         processedSvg = processedSvg.replace(
