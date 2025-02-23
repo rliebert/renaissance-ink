@@ -52,22 +52,24 @@ export function SVGPreview({
               const isSelected = selectedElements.has(id);
               console.log(`Processing element ${id}, selected:`, isSelected);
 
-              // Add direct stroke attributes for better visibility
-              const strokeAttrs = isSelected ? 
-                'stroke="#4299e1" stroke-width="2" stroke-opacity="1"' : '';
+              // Add selection styles that combine both stroke and outline for better visibility
+              const selectionStyles = isSelected ? `
+                stroke: #4299e1 !important;
+                stroke-width: 2px !important;
+                stroke-opacity: 1 !important;
+                outline: 2px solid #4299e1 !important;
+                outline-offset: 2px !important;
+                pointer-events: all !important;
+              ` : '';
 
-              // Clean up existing styles and add selection style
+              // Clean up existing styles
               let cleanedBeforeId = beforeId.replace(/style="[^"]*"/, '').trim();
               let cleanedAfterId = afterId.replace(/style="[^"]*"/, '').trim();
 
-              // Add pointer cursor and selection styles
-              const styles = [
-                'cursor: pointer',
-                isSelected && 'outline: 2px solid #4299e1',
-                isSelected && 'outline-offset: 2px'
-              ].filter(Boolean).join('; ');
+              // Combine cursor style with selection styles
+              const styles = `cursor: pointer !important; ${selectionStyles}`.trim();
 
-              const result = `<${tagName} ${cleanedBeforeId} id="${id}" ${strokeAttrs} style="${styles}" ${cleanedAfterId}>`;
+              const result = `<${tagName} ${cleanedBeforeId} id="${id}" style="${styles}" ${cleanedAfterId}>`;
               console.log('Generated element:', result);
               return result;
             }
@@ -90,14 +92,12 @@ export function SVGPreview({
   const findSelectableElement = (element: HTMLElement): HTMLElement | null => {
     let current: HTMLElement | null = element;
     while (current) {
-      // Log the element being checked
       console.log('Checking element:', {
         tagName: current.tagName.toLowerCase(),
         id: current.id,
         attributes: Array.from(current.attributes).map(a => `${a.name}="${a.value}"`).join(', ')
       });
 
-      // Check if this is a valid SVG element with an ID
       if (current.id && ['path', 'circle', 'rect', 'ellipse', 'polygon', 'polyline', 'line']
           .includes(current.tagName.toLowerCase())) {
         console.log('Found valid SVG element:', current.id);
