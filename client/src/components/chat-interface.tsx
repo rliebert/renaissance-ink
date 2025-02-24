@@ -42,6 +42,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const { toast } = useToast();
   const [previewSvg, setPreviewSvg] = useState<string | null>(null);
+  const [previewDebug, setPreviewDebug] = useState<any>(null);
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
@@ -56,6 +57,7 @@ export function ChatInterface({
     async function fetchPreview() {
       if (!originalSvg || (!selectedElements.length && !referenceElements.length)) {
         setPreviewSvg(null);
+        setPreviewDebug(null);
         return;
       }
 
@@ -71,11 +73,12 @@ export function ChatInterface({
         }
 
         const data = await response.json();
-        // Extract the SVG string from the response
         setPreviewSvg(data.preview.svg);
+        setPreviewDebug(JSON.parse(data.preview.debug));
       } catch (error) {
         console.error('Preview generation error:', error);
         setPreviewSvg(null);
+        setPreviewDebug(null);
       }
     }
 
@@ -170,6 +173,16 @@ export function ChatInterface({
                 />
               </div>
             </div>
+            {previewDebug && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                <details>
+                  <summary className="cursor-pointer">View Debug Info</summary>
+                  <pre className="mt-2 p-2 bg-muted rounded-md overflow-x-auto">
+                    {JSON.stringify(previewDebug, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -214,6 +227,15 @@ export function ChatInterface({
                           title="View in new tab"
                         >
                           <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleCopySvg(animatedSvg)}
+                          title="Copy SVG code"
+                        >
+                          <Copy className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

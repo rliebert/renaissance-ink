@@ -2,7 +2,6 @@ import OpenAI from "openai";
 import { AnimationParams, Message } from "@shared/schema";
 import { JSDOM } from "jsdom";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface AnimationRequest {
@@ -55,7 +54,7 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
   return document.querySelector('svg')?.outerHTML || '';
 }
 
-// Helper function to get element details including coordinates
+// Helper function to get element details including coordinates and transforms
 function getElementDetails(document: Document, id: string): string {
   const element = document.getElementById(id);
   if (!element) return id;
@@ -64,8 +63,15 @@ function getElementDetails(document: Document, id: string): string {
   const x = element.getAttribute('x') || element.getAttribute('cx') || '0';
   const y = element.getAttribute('y') || element.getAttribute('cy') || '0';
   const transform = element.getAttribute('transform') || '';
+  const path = element.getAttribute('d');
 
-  return `#${id} (${tag} at x=${x}, y=${y}${transform ? `, transform=${transform}` : ''})`;
+  // Create detailed debug info
+  let details = `#${id} (${tag} at x=${x}, y=${y}`;
+  if (transform) details += `, transform=${transform}`;
+  if (path) details += `, path data available`;
+  details += ')';
+
+  return details;
 }
 
 export function extractSelectedElements(svgContent: string, elementIds: string[]): { svg: string; debug: string } {
@@ -89,6 +95,7 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
         x: element?.getAttribute('x') || element?.getAttribute('cx'),
         y: element?.getAttribute('y') || element?.getAttribute('cy'),
         transform: element?.getAttribute('transform'),
+        path: element?.getAttribute('d'),
       };
     }),
   };
@@ -100,7 +107,7 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   if (debug.originalWidth) minimalSvg.setAttribute('width', debug.originalWidth);
   if (debug.originalHeight) minimalSvg.setAttribute('height', debug.originalHeight);
 
-  // Copy selected elements, preserving their original styles and coordinates
+  // Copy selected elements, preserving their original coordinates and transforms
   for (const id of elementIds) {
     const element = document.getElementById(id);
     if (element) {
@@ -175,7 +182,12 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
     console.log('Animation Generation Debug:', {
       selectedElements: request.selectedElements,
       referenceElements: request.referenceElements,
-      simplifiedSvgInfo: debugInfo
+      simplifiedSvgInfo: debugInfo,
+      prompt: {
+        elementsToAnimate,
+        referencePoints,
+        description: request.description
+      }
     });
 
     // Include previous conversation context
@@ -187,14 +199,30 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
     const messages = [
       {
         role: "system",
-        content: `You are an expert in SVG SMIL animations. Return only the complete SVG with animations added to specified elements.
+        content: `You are an expert in SVG SMIL animations. Generate precise animations that maintain spatial relationships.
 
 Requirements:
-1. Return ONLY the complete SVG code with animations
-2. Preserve XML declaration and all original attributes
-3. Add animations ONLY to specified elements
-4. Keep all other elements unchanged
-5. No comments, explanations, or code blocks - just SVG code`
+1. Return a JSON object containing animation elements
+2. Use relative coordinates when animating with reference points
+3. Keep transforms and coordinate systems consistent
+4. Maintain center points for rotations
+
+Return format:
+{
+  "animations": [
+    {
+      "elementId": "path1",
+      "animations": ["<animateTransform.../>"]
+    }
+  ],
+  "parameters": {
+    "duration": 2,
+    "easing": "ease",
+    "repeat": 0,
+    "direction": "normal"
+  },
+  "explanation": "Brief description"
+}`
       },
       ...conversationContext,
       {
@@ -213,7 +241,7 @@ ${simplifiedSvg}`
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: messages as any, // Type assertion needed due to OpenAI types
+      messages: messages as any,
       response_format: { type: "json_object" }
     });
 
