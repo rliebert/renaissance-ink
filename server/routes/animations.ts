@@ -25,14 +25,16 @@ router.post('/', async (req, res) => {
   try {
     // Validate request body
     const parsedBody = insertAnimationSchema.parse(req.body);
+    const { loop = true } = req.body; // Extract loop parameter with default true
 
     // Generate initial animation
     const animationResult = await generateAnimation({
       svgContent: parsedBody.originalSvg,
       selectedElements: parsedBody.selectedElements || [],
-      referenceElements: parsedBody.referenceElements || [], // Pass reference elements
+      referenceElements: parsedBody.referenceElements || [],
       description: parsedBody.description,
-      parameters: parsedBody.parameters
+      parameters: parsedBody.parameters,
+      loop, // Pass loop parameter to animation generator
     });
 
     // Insert into database
@@ -63,7 +65,7 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { description, parameters } = req.body;
+    const { description, parameters, loop = true } = req.body;
 
     // Get existing animation
     const [existingAnimation] = await db
@@ -79,10 +81,11 @@ router.patch('/:id', async (req, res) => {
     const animationResult = await generateAnimation({
       svgContent: existingAnimation.originalSvg,
       selectedElements: existingAnimation.selectedElements || [],
-      referenceElements: existingAnimation.referenceElements || [], // Pass reference elements
+      referenceElements: existingAnimation.referenceElements || [],
       description,
       parameters,
-      conversation: existingAnimation.conversation || []
+      conversation: existingAnimation.conversation || [],
+      loop, // Pass loop parameter
     });
 
     // Update animation

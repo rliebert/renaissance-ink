@@ -20,6 +20,7 @@ export default function Home() {
   const [referenceElements, setReferenceElements] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('animate');
   const [conversation, setConversation] = useState<Message[]>([]);
+  const [loopAnimation, setLoopAnimation] = useState<boolean>(false); // Added loopAnimation state
 
   // Memoize selected elements for stable query key
   const selectedElementsKey = useMemo(
@@ -47,7 +48,8 @@ export default function Home() {
       const payload = {
         ...data,
         selectedElements,
-        referenceElements, // Make sure referenceElements are included in the payload
+        referenceElements,
+        loop: loopAnimation, // Add the loop parameter
       };
       const response = await apiRequest("POST", "/api/animations", payload);
       if (!response.ok) {
@@ -248,6 +250,7 @@ export default function Home() {
             originalSvg={originalSvg}
             selectedElements={selectedElements}
             referenceElements={referenceElements}
+            setLoopAnimation={setLoopAnimation} // Pass the setter function
           />
         </div>
 

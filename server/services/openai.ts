@@ -2,8 +2,6 @@ import OpenAI from "openai";
 import { AnimationParams, Message } from "@shared/schema";
 import { JSDOM } from "jsdom";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 interface AnimationRequest {
   svgContent: string;
   selectedElements: string[];
@@ -11,6 +9,7 @@ interface AnimationRequest {
   description: string;
   parameters?: Partial<AnimationParams>;
   conversation?: Message[];
+  loop?: boolean; // Add loop parameter
 }
 
 interface AnimationResponse {
@@ -138,8 +137,9 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
 
     console.log('OpenAI Request:', {
       selectedElements: request.selectedElements,
-      referenceElements: referenceElements, // Log the reference elements
+      referenceElements: referenceElements,
       description: request.description,
+      loop: request.loop,
       debugInfo
     });
 
@@ -163,13 +163,19 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
     "direction": "normal"
   },
   "explanation": "Brief description"
-}`
+}
+
+2. For animation looping:
+   - If loop=true: Use repeatCount="indefinite"
+   - If loop=false: Use repeatCount="1" or omit repeatCount
+`
       },
       ...conversationContext,
       {
         role: "user",
         content: `Animate these elements: ${request.selectedElements.join(', ')}
 Description: "${request.description}"
+Loop animations: ${request.loop ? 'yes' : 'no'}
 
 The following elements should remain static (do not animate them): ${referenceElements.length > 0 ? referenceElements.join(', ') : 'none'}
 
