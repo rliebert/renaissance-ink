@@ -171,10 +171,17 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
   "explanation": "Brief description"
 }
 
-2. For animation looping:
-   - If loop=true: Use repeatCount="indefinite"
-   - If loop=false: Use repeatCount="1" or omit repeatCount
-`
+2. Animation looping is CRITICAL:
+   - When loop=true: ALWAYS use repeatCount="indefinite" for ALL animations
+   - When loop=false: ALWAYS use repeatCount="1" or omit repeatCount
+   - Apply this consistently across ALL animation elements
+   - Double-check all animation elements have the correct repeatCount
+
+3. Animation requirements:
+   - Keep all animations synchronized
+   - Preserve spatial relationships
+   - Never animate reference elements
+   - Use clear, predictable motion`
       },
       ...conversationContext,
       {
