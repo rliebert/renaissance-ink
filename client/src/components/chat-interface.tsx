@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { Message } from "@shared/schema";
 import { SVGPreview } from "./svg-preview";
 import { LoadingIndicator } from "./loading-indicator";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const messageSchema = z.object({
   content: z.string().min(1, "Please enter a message"),
@@ -20,7 +21,7 @@ type MessageFormData = z.infer<typeof messageSchema>;
 
 interface ChatInterfaceProps {
   messages: Message[];
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, loopAnimation?: boolean) => void;
   isLoading?: boolean;
   animatedSvg?: string | null;
   previewSvg?: string | null;
@@ -42,19 +43,14 @@ export function ChatInterface({
     },
   });
 
+  const [loopAnimation, setLoopAnimation] = useState(true);
+
   const onSubmit = (data: MessageFormData) => {
-    onSendMessage(data.content);
+    onSendMessage(data.content, loopAnimation);
     form.reset();
   };
 
   const handleDownload = (svg: string) => {
-    console.log('Downloading SVG:', {
-      length: svg.length,
-      containsAnimate: svg.includes('<animate'),
-      containsAnimateTransform: svg.includes('<animateTransform'),
-      preview: svg.substring(0, 200) + '...'
-    });
-
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -67,13 +63,6 @@ export function ChatInterface({
   };
 
   const handleViewInNewTab = (svg: string) => {
-    console.log('Opening SVG in new tab:', {
-      length: svg.length,
-      containsAnimate: svg.includes('<animate'),
-      containsAnimateTransform: svg.includes('<animateTransform'),
-      preview: svg.substring(0, 200) + '...'
-    });
-
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
@@ -81,7 +70,51 @@ export function ChatInterface({
   };
 
   return (
-    <Card className="flex flex-col h-[500px]">
+    <Card className="flex flex-col h-[500px] relative">
+      {/* Selected elements overlay preview */}
+      {(previewSvg || referenceSvg) && (
+        <div className="absolute top-4 right-4 z-10 bg-background/95 rounded-lg shadow-lg border p-4 w-64">
+          <div className="space-y-4">
+            {previewSvg && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
+                  <p className="text-xs text-muted-foreground">Selected elements:</p>
+                </div>
+                <div className="aspect-square bg-background rounded-lg">
+                  <div className="w-full h-full flex items-center justify-center p-2">
+                    <SVGPreview
+                      svg={previewSvg}
+                      title=""
+                      className="w-full h-full"
+                      selectable={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            {referenceSvg && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
+                  <p className="text-xs text-muted-foreground">Selected ref(s):</p>
+                </div>
+                <div className="aspect-square bg-background rounded-lg">
+                  <div className="w-full h-full flex items-center justify-center p-2">
+                    <SVGPreview
+                      svg={referenceSvg}
+                      title=""
+                      className="w-full h-full"
+                      selectable={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message, index) => (
@@ -98,47 +131,6 @@ export function ChatInterface({
                     : "bg-muted"
                 }`}
               >
-                {message.role === "user" && index === messages.length - 1 && (previewSvg || referenceSvg) && (
-                  <div className="mb-2 p-2 rounded bg-background/50 space-y-4">
-                    {previewSvg && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
-                          <p className="text-xs opacity-70">Selected elements:</p>
-                        </div>
-                        <div className="w-24 h-24 mx-auto bg-background rounded-lg">
-                          <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
-                            <SVGPreview
-                              svg={previewSvg}
-                              title=""
-                              className="w-full h-full"
-                              selectable={false}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {referenceSvg && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
-                          <p className="text-xs opacity-70">Selected ref(s):</p>
-                        </div>
-                        <div className="w-24 h-24 mx-auto bg-background rounded-lg">
-                          <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
-                            <SVGPreview
-                              svg={referenceSvg}
-                              title=""
-                              className="w-full h-full"
-                              selectable={false}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
 
                 {message.role === "assistant" && index === messages.length - 1 && animatedSvg && (
@@ -196,48 +188,7 @@ export function ChatInterface({
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t space-y-4">
-        {(previewSvg || referenceSvg) && (
-          <div className="p-2 border rounded-lg bg-muted space-y-4">
-            {previewSvg && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
-                  <p className="text-xs text-muted-foreground">Selected elements:</p>
-                </div>
-                <div className="w-24 h-24 mx-auto bg-background rounded-lg">
-                  <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
-                    <SVGPreview
-                      svg={previewSvg}
-                      title=""
-                      className="w-full h-full"
-                      selectable={false}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            {referenceSvg && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
-                  <p className="text-xs text-muted-foreground">Selected ref(s):</p>
-                </div>
-                <div className="w-24 h-24 mx-auto bg-background rounded-lg">
-                  <div className="w-full h-full flex items-center justify-center pt-1 pb-3">
-                    <SVGPreview
-                      svg={referenceSvg}
-                      title=""
-                      className="w-full h-full"
-                      selectable={false}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
+      <div className="p-4 border-t">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             <FormField
@@ -255,6 +206,19 @@ export function ChatInterface({
                 </FormItem>
               )}
             />
+            <div className="flex items-center space-x-2 mb-2">
+              <Checkbox 
+                id="loopAnimation"
+                checked={loopAnimation}
+                onCheckedChange={(checked) => setLoopAnimation(checked as boolean)}
+              />
+              <label
+                htmlFor="loopAnimation"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Loop Animation
+              </label>
+            </div>
             <Button
               type="submit"
               className="w-full"
