@@ -54,19 +54,21 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
   return document.querySelector('svg')?.outerHTML || '';
 }
 
-// Helper function to get element details including coordinates and transforms
+// Helper function to get element details including coordinates, transforms, and center point
 function getElementDetails(document: Document, id: string): string {
   const element = document.getElementById(id);
   if (!element) return id;
 
   const tag = element.tagName.toLowerCase();
-  const x = element.getAttribute('x') || element.getAttribute('cx') || '0';
-  const y = element.getAttribute('y') || element.getAttribute('cy') || '0';
+  const bbox = element.getBBox?.() || {};
+  const cx = bbox.x !== undefined ? bbox.x + bbox.width / 2 : element.getAttribute('cx');
+  const cy = bbox.y !== undefined ? bbox.y + bbox.height / 2 : element.getAttribute('cy');
   const transform = element.getAttribute('transform') || '';
   const path = element.getAttribute('d');
 
   // Create detailed debug info
-  let details = `#${id} (${tag} at x=${x}, y=${y}`;
+  let details = `#${id} (${tag}`;
+  if (cx !== null && cy !== null) details += ` center=(${cx},${cy})`;
   if (transform) details += `, transform=${transform}`;
   if (path) details += `, path data available`;
   details += ')';
@@ -82,18 +84,21 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   const originalSvg = document.querySelector('svg');
   if (!originalSvg) throw new Error("Invalid SVG: no svg element found");
 
-  // Create debug info
+  // Create debug info with element center points
   const debug = {
     originalViewBox: originalSvg.getAttribute('viewBox'),
     originalWidth: originalSvg.getAttribute('width'),
     originalHeight: originalSvg.getAttribute('height'),
     selectedElements: elementIds.map(id => {
       const element = document.getElementById(id);
+      const bbox = element?.getBBox?.() || {};
       return {
         id,
         tag: element?.tagName.toLowerCase(),
-        x: element?.getAttribute('x') || element?.getAttribute('cx'),
-        y: element?.getAttribute('y') || element?.getAttribute('cy'),
+        center: {
+          x: bbox.x !== undefined ? bbox.x + bbox.width / 2 : element?.getAttribute('cx'),
+          y: bbox.y !== undefined ? bbox.y + bbox.height / 2 : element?.getAttribute('cy'),
+        },
         transform: element?.getAttribute('transform'),
         path: element?.getAttribute('d'),
       };
@@ -107,7 +112,7 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   if (debug.originalWidth) minimalSvg.setAttribute('width', debug.originalWidth);
   if (debug.originalHeight) minimalSvg.setAttribute('height', debug.originalHeight);
 
-  // Copy selected elements, preserving their original coordinates and transforms
+  // Copy selected elements with their coordinates and transforms preserved
   for (const id of elementIds) {
     const element = document.getElementById(id);
     if (element) {
@@ -144,17 +149,6 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
     }
   }
 
-  console.log('Extracted SVG Debug:', {
-    input: {
-      elementIds,
-      svgContentLength: svgContent.length,
-    },
-    output: {
-      minimalSvgLength: minimalSvg.outerHTML.length,
-      debug
-    }
-  });
-
   return {
     svg: minimalSvg.outerHTML,
     debug: JSON.stringify(debug, null, 2)
@@ -166,7 +160,7 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
     const dom = new JSDOM(request.svgContent);
     const document = dom.window.document;
 
-    // Create detailed context for elements
+    // Get detailed element information including center points
     const elementsToAnimate = request.selectedElements
       .map(id => getElementDetails(document, id))
       .join(', ');
@@ -205,7 +199,7 @@ Requirements:
 1. Return a JSON object containing animation elements
 2. Use relative coordinates when animating with reference points
 3. Keep transforms and coordinate systems consistent
-4. Maintain center points for rotations
+4. When rotating elements around a reference point, use that point's center as the transform origin
 
 Return format:
 {
@@ -227,7 +221,10 @@ Return format:
       ...conversationContext,
       {
         role: "user",
-        content: `Create animations for these elements (${elementsToAnimate})${referencePoints}: "${request.description}"
+        content: `Create animations for these elements (${elementsToAnimate})${referencePoints}
+Description: "${request.description}"
+
+Reference points should be used as anchors for animations (e.g. as rotation centers) but should not be animated themselves.
 
 ${simplifiedSvg}`
       }
