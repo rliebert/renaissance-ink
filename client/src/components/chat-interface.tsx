@@ -71,7 +71,8 @@ export function ChatInterface({
         }
 
         const data = await response.json();
-        setPreviewSvg(data.preview);
+        // Extract the SVG string from the response
+        setPreviewSvg(data.preview.svg);
       } catch (error) {
         console.error('Preview generation error:', error);
         setPreviewSvg(null);
@@ -105,7 +106,9 @@ export function ChatInterface({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  const handleCopySvg = async (svg: string) => {
+  const handleCopySvg = async (svg: string | null) => {
+    if (!svg) return;
+
     try {
       await navigator.clipboard.writeText(svg);
       toast({
