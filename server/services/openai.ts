@@ -2,6 +2,12 @@ import OpenAI from "openai";
 import { AnimationParams, Message } from "@shared/schema";
 import { JSDOM } from "jsdom";
 
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("Missing OPENAI_API_KEY environment variable");
+}
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 interface AnimationRequest {
   svgContent: string;
   selectedElements: string[];
