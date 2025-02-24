@@ -137,6 +137,17 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
     }
   }
 
+  console.log('Extracted SVG Debug:', {
+    input: {
+      elementIds,
+      svgContentLength: svgContent.length,
+    },
+    output: {
+      minimalSvgLength: minimalSvg.outerHTML.length,
+      debug
+    }
+  });
+
   return {
     svg: minimalSvg.outerHTML,
     debug: JSON.stringify(debug, null, 2)

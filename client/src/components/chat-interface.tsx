@@ -149,7 +149,7 @@ export function ChatInterface({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
-                onClick={() => handleCopySvg(previewSvg!)}
+                onClick={() => handleCopySvg(previewSvg)}
                 title="Copy SVG code"
               >
                 <Copy className="h-4 w-4" />
