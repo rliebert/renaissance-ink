@@ -240,14 +240,12 @@ export function ChatInterface({
                       </div>
                     </div>
                     <div className="relative aspect-square w-full max-w-[200px] mx-auto">
-                      <div className="absolute inset-0 p-4 flex items-center justify-center">
-                        <div className="w-full h-full flex items-center justify-center">
-                          <SVGPreview
-                            svg={animatedSvg}
-                            title=""
-                            className="w-full h-full"
-                          />
-                        </div>
+                      <div className="absolute inset-0 p-6 flex items-center justify-center bg-background/50 rounded">
+                        <SVGPreview
+                          svg={animatedSvg}
+                          title=""
+                          className="w-full h-full"
+                        />
                       </div>
                     </div>
                   </div>
