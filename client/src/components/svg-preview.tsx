@@ -86,30 +86,36 @@ function processSvg(
           const styleMatch = attributes.match(/style="([^"]+)"/);
           const existingStyles = styleMatch ? styleMatch[1] : '';
 
-          let newStyles = existingStyles;
+          // Store original style if it exists
+          let newAttributes = attributes;
+          if (styleMatch) {
+            newAttributes = newAttributes.replace(/style="[^"]+"/g, `data-original-style="${existingStyles}"`);
+          }
+
+          let newStyles = '';
           if (isSelectable) {
-            newStyles += '; pointer-events: all !important; cursor: pointer !important;';
+            newStyles += 'pointer-events: all !important; cursor: pointer !important;';
           }
 
           if (isSelected) {
             newStyles += `
-              ; stroke: #4299e1 !important
-              ; stroke-width: 2 !important
-              ; stroke-opacity: 1 !important
-              ; fill-opacity: 0.8 !important
+              stroke: #4299e1 !important;
+              stroke-width: 2 !important;
+              stroke-opacity: 1 !important;
+              fill-opacity: 0.8 !important;
             `;
           } else if (isReference) {
             newStyles += `
-              ; stroke: #10b981 !important
-              ; stroke-width: 2 !important
-              ; stroke-opacity: 1 !important
-              ; fill-opacity: 0.8 !important
+              stroke: #10b981 !important;
+              stroke-width: 2 !important;
+              stroke-opacity: 1 !important;
+              fill-opacity: 0.8 !important;
             `;
           }
 
-          const newAttributes = styleMatch
-            ? attributes.replace(/style="[^"]+"/g, `style="${newStyles}"`)
-            : attributes + ` style="${newStyles}"`;
+          if (newStyles) {
+            newAttributes += ` style="${newStyles}"`;
+          }
 
           return `<${tagName}${newAttributes}>`;
         }
@@ -169,7 +175,7 @@ export function SVGPreview({
           <h3 className="font-medium text-lg">{title}</h3>
           {selectable && (
             <p className="text-sm text-muted-foreground">
-              {selectionMode === 'animate' 
+              {selectionMode === 'animate'
                 ? "Click on elements to select them for animation"
                 : "Click on elements to add reference points"}
             </p>

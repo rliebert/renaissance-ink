@@ -218,11 +218,19 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   if (width) minimalSvg.setAttribute('width', width);
   if (height) minimalSvg.setAttribute('height', height);
 
-  // Copy selected elements
+  // Copy selected elements, but strip out any highlighting styles
   for (const id of elementIds) {
     const element = document.getElementById(id);
     if (element) {
-      minimalSvg.appendChild(element.cloneNode(true));
+      const clone = element.cloneNode(true) as Element;
+      // Remove any style attributes we added for highlighting
+      clone.removeAttribute('style');
+      // Preserve only original styles if they existed
+      const originalStyle = element.getAttribute('data-original-style');
+      if (originalStyle) {
+        clone.setAttribute('style', originalStyle);
+      }
+      minimalSvg.appendChild(clone);
     }
   }
 
