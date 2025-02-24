@@ -26,6 +26,9 @@ interface ChatInterfaceProps {
   animatedSvg?: string | null;
   previewSvg?: string | null;
   referenceSvg?: string | null;
+  originalSvg?: string | null; // Added
+  selectedElements?: string[] | null; // Added
+  referenceElements?: string[] | null; // Added
 }
 
 export function ChatInterface({
@@ -34,7 +37,10 @@ export function ChatInterface({
   isLoading = false,
   animatedSvg,
   previewSvg,
-  referenceSvg
+  referenceSvg,
+  originalSvg, // Added
+  selectedElements, // Added
+  referenceElements, // Added
 }: ChatInterfaceProps) {
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
@@ -97,12 +103,12 @@ export function ChatInterface({
             <div className="aspect-square bg-background rounded-lg">
               <div className="w-full h-full flex items-center justify-center p-2">
                 <SVGPreview
-                  svg={previewSvg || referenceSvg}
+                  svg={originalSvg}
                   title=""
                   className="w-full h-full"
                   selectable={false}
-                  selectedElements={previewSvg ? ['all'] : []}
-                  referenceElements={referenceSvg ? ['all'] : []}
+                  selectedElements={selectedElements}
+                  referenceElements={referenceElements}
                 />
               </div>
             </div>

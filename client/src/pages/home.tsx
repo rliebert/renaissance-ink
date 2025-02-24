@@ -300,8 +300,9 @@ export default function Home() {
             onSendMessage={handleSendMessage}
             isLoading={mutation.isPending}
             animatedSvg={mutation.data?.animatedSvg}
-            previewSvg={previewQuery.data}
-            referenceSvg={referencePreviewQuery.data}
+            originalSvg={originalSvg}
+            selectedElements={selectedElements}
+            referenceElements={referenceElements}
           />
         </div>
 
