@@ -24,11 +24,9 @@ interface ChatInterfaceProps {
   onSendMessage: (content: string, loopAnimation?: boolean) => void;
   isLoading?: boolean;
   animatedSvg?: string | null;
-  previewSvg?: string | null;
-  referenceSvg?: string | null;
-  originalSvg?: string | null; // Added
-  selectedElements?: string[] | null; // Added
-  referenceElements?: string[] | null; // Added
+  originalSvg?: string | null;
+  selectedElements?: string[];
+  referenceElements?: string[];
 }
 
 export function ChatInterface({
@@ -36,11 +34,9 @@ export function ChatInterface({
   onSendMessage,
   isLoading = false,
   animatedSvg,
-  previewSvg,
-  referenceSvg,
-  originalSvg, // Added
-  selectedElements, // Added
-  referenceElements, // Added
+  originalSvg,
+  selectedElements = [],
+  referenceElements = [],
 }: ChatInterfaceProps) {
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
@@ -75,24 +71,26 @@ export function ChatInterface({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const showPreview = originalSvg && (selectedElements.length > 0 || referenceElements.length > 0);
+
   return (
     <Card className="flex flex-col h-[500px] relative">
       {/* Combined selected elements preview */}
-      {(previewSvg || referenceSvg) && (
+      {showPreview && (
         <div className="absolute top-4 right-4 z-10 bg-background/95 rounded-lg shadow-lg border p-4 w-64">
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-2">
               <div className="flex gap-2">
-                {previewSvg && (
+                {selectedElements.length > 0 && (
                   <div className="flex items-center gap-1">
                     <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
                     <p className="text-xs text-muted-foreground">To animate</p>
                   </div>
                 )}
-                {previewSvg && referenceSvg && (
+                {selectedElements.length > 0 && referenceElements.length > 0 && (
                   <span className="text-xs text-muted-foreground">·</span>
                 )}
-                {referenceSvg && (
+                {referenceElements.length > 0 && (
                   <div className="flex items-center gap-1">
                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
                     <p className="text-xs text-muted-foreground">Reference</p>

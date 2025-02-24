@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { insertAnimationSchema, type Animation, type Message } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Form } from "@/components/ui/form";
@@ -41,61 +41,6 @@ export default function Home() {
     },
   });
 
-  // Query for selected elements preview
-  const previewQuery = useQuery({
-    queryKey: ['svg-preview', selectedElementsKey],
-    queryFn: async () => {
-      if (!originalSvg || selectedElements.length === 0) {
-        return null;
-      }
-
-      try {
-        const response = await apiRequest("POST", "/api/svg/preview", {
-          svgContent: originalSvg,
-          selectedElements
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to generate preview');
-        }
-
-        const data = await response.json();
-        return data.preview as string;
-      } catch (error) {
-        console.error('Preview generation error:', error);
-        return null;
-      }
-    },
-    enabled: !!originalSvg && selectedElements.length > 0
-  });
-
-  // Query for reference elements preview
-  const referencePreviewQuery = useQuery({
-    queryKey: ['svg-preview', referenceElementsKey],
-    queryFn: async () => {
-      if (!originalSvg || referenceElements.length === 0) {
-        return null;
-      }
-
-      try {
-        const response = await apiRequest("POST", "/api/svg/preview", {
-          svgContent: originalSvg,
-          selectedElements: referenceElements
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to generate reference preview');
-        }
-
-        const data = await response.json();
-        return data.preview as string;
-      } catch (error) {
-        console.error('Reference preview generation error:', error);
-        return null;
-      }
-    },
-    enabled: !!originalSvg && referenceElements.length > 0
-  });
 
   const mutation = useMutation({
     mutationFn: async (data: { originalSvg: string; description: string }) => {
