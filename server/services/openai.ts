@@ -224,9 +224,8 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
     if (element) {
       const clone = element.cloneNode(true) as Element;
 
-      // Get computed styles from the original element
-      const styles = window.getComputedStyle(element);
-      const originalStyle = element.getAttribute('style') || '';
+      // Get original element attributes that affect appearance
+      const originalStyle = element.getAttribute('data-original-style') || element.getAttribute('style') || '';
       const originalFill = element.getAttribute('fill');
       const originalStroke = element.getAttribute('stroke');
 
@@ -235,15 +234,15 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
 
       // Combine original styles
       let combinedStyles = originalStyle;
-      if (originalFill) {
+      if (originalFill && !originalStyle.includes('fill:')) {
         combinedStyles += `; fill: ${originalFill}`;
       }
-      if (originalStroke) {
+      if (originalStroke && !originalStyle.includes('stroke:')) {
         combinedStyles += `; stroke: ${originalStroke}`;
       }
 
       if (combinedStyles) {
-        clone.setAttribute('style', combinedStyles.replace(/^;/, ''));
+        clone.setAttribute('style', combinedStyles.replace(/^;\s*/, ''));
       }
 
       minimalSvg.appendChild(clone);
