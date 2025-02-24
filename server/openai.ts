@@ -91,7 +91,7 @@ export async function generateSvgAnimation(
     // Clean up SVG before processing
     const cleanedSvg = cleanupSvg(svg);
 
-    // Create a more focused prompt based on selected elements
+    // Create element list
     const elementsList = selectedElements.length > 0 
       ? selectedElements.map(id => `#${id}`).join(', ')
       : 'all elements';
@@ -116,24 +116,20 @@ export async function generateSvgAnimation(
       messages: [
         {
           role: "system",
-          content: `You are an expert autonomous programmer specializing in SVG animations.
-CRITICAL REQUIREMENTS:
+          content: `You are an expert in SVG SMIL animations. Return only the complete SVG with animations added to specified elements.
+
+Requirements:
 1. Return ONLY the complete SVG code with animations
-2. Do NOT use ANY comments or omissions
-3. Preserve the EXACT XML declaration
-4. Maintain ALL original attributes in the svg tag
-5. Add animation elements ONLY to the specified elements: ${elementsList}
-6. Keep ALL original elements exactly as they are
-7. No markdown, no code blocks, no explanations - just pure SVG code
-8. NEVER truncate or omit any content`
+2. Preserve XML declaration and all original attributes
+3. Add animations ONLY to specified elements
+4. Keep all other elements unchanged
+5. No comments, explanations, or code blocks - just SVG code`
         },
         {
           role: "user",
-          content: `Apply this animation to these elements (${elementsList}): "${description}"
+          content: `Create animations for these elements (${elementsList}): "${description}"
 
-${cleanedSvg}
-
-Return the complete SVG with animations applied only to the specified elements.`
+${cleanedSvg}`
         }
       ],
       temperature: 0.7,
