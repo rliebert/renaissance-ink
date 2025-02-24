@@ -50,7 +50,7 @@ export function ChatInterface({
     },
   });
 
-  const [loopAnimation, setLoopAnimation] = useState(true);
+  const [loopAnimation, setLoopAnimation] = useState(true); // Set default to true
 
   // Fetch selected elements preview
   useEffect(() => {
