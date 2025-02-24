@@ -218,18 +218,34 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   if (width) minimalSvg.setAttribute('width', width);
   if (height) minimalSvg.setAttribute('height', height);
 
-  // Copy selected elements, but strip out any highlighting styles
+  // Copy selected elements, preserving their original styles and colors
   for (const id of elementIds) {
     const element = document.getElementById(id);
     if (element) {
       const clone = element.cloneNode(true) as Element;
-      // Remove any style attributes we added for highlighting
+
+      // Get computed styles from the original element
+      const styles = window.getComputedStyle(element);
+      const originalStyle = element.getAttribute('style') || '';
+      const originalFill = element.getAttribute('fill');
+      const originalStroke = element.getAttribute('stroke');
+
+      // Remove any highlighting styles we added
       clone.removeAttribute('style');
-      // Preserve only original styles if they existed
-      const originalStyle = element.getAttribute('data-original-style');
-      if (originalStyle) {
-        clone.setAttribute('style', originalStyle);
+
+      // Combine original styles
+      let combinedStyles = originalStyle;
+      if (originalFill) {
+        combinedStyles += `; fill: ${originalFill}`;
       }
+      if (originalStroke) {
+        combinedStyles += `; stroke: ${originalStroke}`;
+      }
+
+      if (combinedStyles) {
+        clone.setAttribute('style', combinedStyles.replace(/^;/, ''));
+      }
+
       minimalSvg.appendChild(clone);
     }
   }
