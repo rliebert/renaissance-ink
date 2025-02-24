@@ -15,7 +15,6 @@ import { LoadingIndicator } from "./loading-indicator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/queryClient";
 
-
 const messageSchema = z.object({
   content: z.string().min(1, "Please enter a message"),
 });
@@ -41,6 +40,7 @@ export function ChatInterface({
   selectedElements = [],
   referenceElements = [],
 }: ChatInterfaceProps) {
+  const { toast } = useToast();
   const [previewSvg, setPreviewSvg] = useState<string | null>(null);
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
