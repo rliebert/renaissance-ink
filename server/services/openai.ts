@@ -55,7 +55,7 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
   return document.querySelector('svg')?.outerHTML || '';
 }
 
-// Helper function to get element details
+// Helper function to get element details including coordinates
 function getElementDetails(document: Document, id: string): string {
   const element = document.getElementById(id);
   if (!element) return id;
@@ -63,8 +63,84 @@ function getElementDetails(document: Document, id: string): string {
   const tag = element.tagName.toLowerCase();
   const x = element.getAttribute('x') || element.getAttribute('cx') || '0';
   const y = element.getAttribute('y') || element.getAttribute('cy') || '0';
+  const transform = element.getAttribute('transform') || '';
 
-  return `#${id} (${tag} at x=${x}, y=${y})`;
+  return `#${id} (${tag} at x=${x}, y=${y}${transform ? `, transform=${transform}` : ''})`;
+}
+
+export function extractSelectedElements(svgContent: string, elementIds: string[]): { svg: string; debug: string } {
+  const dom = new JSDOM(svgContent);
+  const document = dom.window.document;
+
+  // Extract viewBox and other necessary attributes from original SVG
+  const originalSvg = document.querySelector('svg');
+  if (!originalSvg) throw new Error("Invalid SVG: no svg element found");
+
+  // Create debug info
+  const debug = {
+    originalViewBox: originalSvg.getAttribute('viewBox'),
+    originalWidth: originalSvg.getAttribute('width'),
+    originalHeight: originalSvg.getAttribute('height'),
+    selectedElements: elementIds.map(id => {
+      const element = document.getElementById(id);
+      return {
+        id,
+        tag: element?.tagName.toLowerCase(),
+        x: element?.getAttribute('x') || element?.getAttribute('cx'),
+        y: element?.getAttribute('y') || element?.getAttribute('cy'),
+        transform: element?.getAttribute('transform'),
+      };
+    }),
+  };
+
+  // Create a new minimal SVG with only selected elements
+  const minimalSvg = document.createElement('svg');
+  minimalSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  if (debug.originalViewBox) minimalSvg.setAttribute('viewBox', debug.originalViewBox);
+  if (debug.originalWidth) minimalSvg.setAttribute('width', debug.originalWidth);
+  if (debug.originalHeight) minimalSvg.setAttribute('height', debug.originalHeight);
+
+  // Copy selected elements, preserving their original styles and coordinates
+  for (const id of elementIds) {
+    const element = document.getElementById(id);
+    if (element) {
+      const clone = element.cloneNode(true) as Element;
+
+      // Preserve original coordinates and transforms
+      const transform = element.getAttribute('transform');
+      if (transform) {
+        clone.setAttribute('transform', transform);
+      }
+
+      // Get original element attributes that affect appearance
+      const originalStyle = element.getAttribute('data-original-style') || element.getAttribute('style') || '';
+      const originalFill = element.getAttribute('fill');
+      const originalStroke = element.getAttribute('stroke');
+
+      // Remove any highlighting styles we added
+      clone.removeAttribute('style');
+
+      // Combine original styles
+      let combinedStyles = originalStyle;
+      if (originalFill && !originalStyle.includes('fill:')) {
+        combinedStyles += `; fill: ${originalFill}`;
+      }
+      if (originalStroke && !originalStyle.includes('stroke:')) {
+        combinedStyles += `; stroke: ${originalStroke}`;
+      }
+
+      if (combinedStyles) {
+        clone.setAttribute('style', combinedStyles.replace(/^;\s*/, ''));
+      }
+
+      minimalSvg.appendChild(clone);
+    }
+  }
+
+  return {
+    svg: minimalSvg.outerHTML,
+    debug: JSON.stringify(debug, null, 2)
+  };
 }
 
 export async function generateAnimation(request: AnimationRequest): Promise<AnimationResponse> {
@@ -77,6 +153,19 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
       .map(id => getElementDetails(document, id))
       .join(', ');
 
+    const referencePoints = request.referenceElements?.length 
+      ? `\nReference points: ${request.referenceElements.map(id => getElementDetails(document, id)).join(', ')}`
+      : '';
+
+    // Get simplified SVG with debug info
+    const { svg: simplifiedSvg, debug: debugInfo } = extractSelectedElements(request.svgContent, 
+      [...request.selectedElements, ...(request.referenceElements || [])]);
+
+    console.log('Animation Generation Debug:', {
+      selectedElements: request.selectedElements,
+      referenceElements: request.referenceElements,
+      simplifiedSvgInfo: debugInfo
+    });
 
     // Include previous conversation context
     const conversationContext = request.conversation?.map(msg => ({
@@ -87,38 +176,21 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
     const messages = [
       {
         role: "system",
-        content: `You are an expert in SVG SMIL animations. Your task is to generate animation elements for specific SVG elements.
+        content: `You are an expert in SVG SMIL animations. Return only the complete SVG with animations added to specified elements.
 
-Return a JSON object with an 'animations' array containing objects with:
-- elementId: the ID of the element to animate
-- animations: array of SMIL animation strings to add to that element
-
-Example format:
-{
-  "animations": [
-    {
-      "elementId": "circle1",
-      "animations": [
-        "<animate attributeName='r' values='20;40;20' dur='2s' repeatCount='indefinite'/>",
-        "<animateTransform attributeName='transform' type='rotate' from='0' to='360' dur='3s' repeatCount='indefinite'/>"
-      ]
-    }
-  ],
-  "parameters": {
-    "duration": 2,
-    "easing": "ease",
-    "repeat": 0,
-    "direction": "normal"
-  },
-  "explanation": "Brief description of the animation approach"
-}`
+Requirements:
+1. Return ONLY the complete SVG code with animations
+2. Preserve XML declaration and all original attributes
+3. Add animations ONLY to specified elements
+4. Keep all other elements unchanged
+5. No comments, explanations, or code blocks - just SVG code`
       },
       ...conversationContext,
       {
         role: "user",
-        content: `Create SMIL animations for these elements: ${elementsToAnimate}
-Animation description: ${request.description}
-${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)}` : ''}`
+        content: `Create animations for these elements (${elementsToAnimate})${referencePoints}: "${request.description}"
+
+${simplifiedSvg}`
       }
     ];
 
@@ -147,7 +219,6 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
 
     const result = JSON.parse(content);
 
-
     // Insert the animations into the original SVG
     const animatedSvg = insertAnimations(request.svgContent, result.animations);
 
@@ -175,57 +246,4 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate animation: ${errorMessage}`);
   }
-}
-
-export function extractSelectedElements(svgContent: string, elementIds: string[]): string {
-  const dom = new JSDOM(svgContent);
-  const document = dom.window.document;
-
-  // Extract viewBox and other necessary attributes from original SVG
-  const originalSvg = document.querySelector('svg');
-  if (!originalSvg) throw new Error("Invalid SVG: no svg element found");
-
-  const viewBox = originalSvg.getAttribute('viewBox');
-  const width = originalSvg.getAttribute('width');
-  const height = originalSvg.getAttribute('height');
-
-  // Create a new minimal SVG with only selected elements
-  const minimalSvg = document.createElement('svg');
-  minimalSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  if (viewBox) minimalSvg.setAttribute('viewBox', viewBox);
-  if (width) minimalSvg.setAttribute('width', width);
-  if (height) minimalSvg.setAttribute('height', height);
-
-  // Copy selected elements, preserving their original styles and colors
-  for (const id of elementIds) {
-    const element = document.getElementById(id);
-    if (element) {
-      const clone = element.cloneNode(true) as Element;
-
-      // Get original element attributes that affect appearance
-      const originalStyle = element.getAttribute('data-original-style') || element.getAttribute('style') || '';
-      const originalFill = element.getAttribute('fill');
-      const originalStroke = element.getAttribute('stroke');
-
-      // Remove any highlighting styles we added
-      clone.removeAttribute('style');
-
-      // Combine original styles
-      let combinedStyles = originalStyle;
-      if (originalFill && !originalStyle.includes('fill:')) {
-        combinedStyles += `; fill: ${originalFill}`;
-      }
-      if (originalStroke && !originalStyle.includes('stroke:')) {
-        combinedStyles += `; stroke: ${originalStroke}`;
-      }
-
-      if (combinedStyles) {
-        clone.setAttribute('style', combinedStyles.replace(/^;\s*/, ''));
-      }
-
-      minimalSvg.appendChild(clone);
-    }
-  }
-
-  return minimalSvg.outerHTML;
 }
