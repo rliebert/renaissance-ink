@@ -71,46 +71,41 @@ export function ChatInterface({
 
   return (
     <Card className="flex flex-col h-[500px] relative">
-      {/* Selected elements overlay preview */}
+      {/* Combined selected elements preview */}
       {(previewSvg || referenceSvg) && (
         <div className="absolute top-4 right-4 z-10 bg-background/95 rounded-lg shadow-lg border p-4 w-64">
-          <div className="space-y-4">
-            {previewSvg && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
-                  <p className="text-xs text-muted-foreground">Selected elements:</p>
-                </div>
-                <div className="aspect-square bg-background rounded-lg">
-                  <div className="w-full h-full flex items-center justify-center p-2">
-                    <SVGPreview
-                      svg={previewSvg}
-                      title=""
-                      className="w-full h-full"
-                      selectable={false}
-                    />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex gap-2">
+                {previewSvg && (
+                  <div className="flex items-center gap-1">
+                    <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
+                    <p className="text-xs text-muted-foreground">Selected</p>
                   </div>
-                </div>
-              </div>
-            )}
-            {referenceSvg && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
-                  <p className="text-xs text-muted-foreground">Selected ref(s):</p>
-                </div>
-                <div className="aspect-square bg-background rounded-lg">
-                  <div className="w-full h-full flex items-center justify-center p-2">
-                    <SVGPreview
-                      svg={referenceSvg}
-                      title=""
-                      className="w-full h-full"
-                      selectable={false}
-                    />
+                )}
+                {previewSvg && referenceSvg && (
+                  <span className="text-xs text-muted-foreground">·</span>
+                )}
+                {referenceSvg && (
+                  <div className="flex items-center gap-1">
+                    <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"/>
+                    <p className="text-xs text-muted-foreground">Reference</p>
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            </div>
+            <div className="aspect-square bg-background rounded-lg">
+              <div className="w-full h-full flex items-center justify-center p-2">
+                <SVGPreview
+                  svg={previewSvg || referenceSvg}
+                  title=""
+                  className="w-full h-full"
+                  selectable={false}
+                  selectedElements={[]}
+                  referenceElements={referenceSvg ? ['all'] : []}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
