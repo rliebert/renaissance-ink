@@ -121,15 +121,27 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
 
 export async function generateAnimation(request: AnimationRequest): Promise<AnimationResponse> {
   try {
+    // Ensure referenceElements is always an array
+    const referenceElements = request.referenceElements || [];
+
     // Get simplified SVG with debug info
-    const { svg: simplifiedSvg, debug: debugInfo } = extractSelectedElements(request.svgContent, 
-      [...request.selectedElements, ...(request.referenceElements || [])]);
+    const { svg: simplifiedSvg, debug: debugInfo } = extractSelectedElements(
+      request.svgContent, 
+      [...request.selectedElements, ...referenceElements]
+    );
 
     // Include previous conversation context
     const conversationContext = request.conversation?.map(msg => ({
       role: msg.role,
       content: msg.content
     })) || [];
+
+    console.log('OpenAI Request:', {
+      selectedElements: request.selectedElements,
+      referenceElements: referenceElements, // Log the reference elements
+      description: request.description,
+      debugInfo
+    });
 
     const messages = [
       {
@@ -156,21 +168,14 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
       ...conversationContext,
       {
         role: "user",
-        content: `Animate the following elements: ${request.selectedElements.join(', ')}
+        content: `Animate these elements: ${request.selectedElements.join(', ')}
 Description: "${request.description}"
 
-The following elements should remain static: ${request.referenceElements?.join(', ') || 'none'}
+The following elements should remain static (do not animate them): ${referenceElements.length > 0 ? referenceElements.join(', ') : 'none'}
 
 ${simplifiedSvg}`
       }
     ];
-
-    console.log('OpenAI Request:', {
-      selectedElements: request.selectedElements,
-      referenceElements: request.referenceElements,
-      description: request.description,
-      debugInfo
-    });
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -195,11 +200,11 @@ ${simplifiedSvg}`
 
     return {
       animatedSvg,
-      suggestedParams: {
-        duration: result.parameters?.duration || 1,
-        easing: result.parameters?.easing || 'ease',
-        repeat: result.parameters?.repeat || 0,
-        direction: result.parameters?.direction || 'normal'
+      suggestedParams: result.parameters || {
+        duration: 2,
+        easing: 'ease',
+        repeat: 0,
+        direction: 'normal'
       },
       explanation: result.explanation
     };
