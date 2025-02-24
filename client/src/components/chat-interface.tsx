@@ -97,7 +97,7 @@ export function ChatInterface({
             <div className="aspect-square bg-background rounded-lg">
               <div className="w-full h-full flex items-center justify-center p-2">
                 <SVGPreview
-                  svg={previewSvg}
+                  svg={previewSvg || referenceSvg}
                   title=""
                   className="w-full h-full"
                   selectable={false}

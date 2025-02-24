@@ -69,7 +69,7 @@ function processSvg(
     });
 
     // Add selection styling if in selectable mode
-    if (selectable) {
+    if (selectable || selectedElements.length > 0 || referenceElements.length > 0) {
       processedSvg = processedSvg.replace(
         /<(path|circle|rect|ellipse|polygon|polyline|line)([^>]*?)>/g,
         (match, tagName, attributes) => {
