@@ -8,7 +8,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 interface AnimationRequest {
   svgContent: string;
   selectedElements: string[];
-  referenceElements?: string[];  // Added referenceElements
+  referenceElements?: string[];
   description: string;
   parameters?: Partial<AnimationParams>;
   conversation?: Message[];
@@ -77,12 +77,6 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
       .map(id => getElementDetails(document, id))
       .join(', ');
 
-    // Create context for reference elements
-    const referenceContext = request.referenceElements?.length
-      ? `Reference elements that should NOT be animated: ${
-          request.referenceElements.map(id => getElementDetails(document, id)).join(', ')
-        }`
-      : '';
 
     // Include previous conversation context
     const conversationContext = request.conversation?.map(msg => ({
@@ -94,17 +88,10 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
       {
         role: "system",
         content: `You are an expert in SVG SMIL animations. Your task is to generate animation elements for specific SVG elements.
-${referenceContext}
 
 Return a JSON object with an 'animations' array containing objects with:
 - elementId: the ID of the element to animate
 - animations: array of SMIL animation strings to add to that element
-
-IMPORTANT RULES:
-1. ONLY generate animations for the explicitly listed elements to animate
-2. DO NOT modify or animate any reference elements
-3. Use the reference elements' positions and attributes as spatial anchors
-4. Keep the reference elements completely static
 
 Example format:
 {
@@ -160,15 +147,6 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
 
     const result = JSON.parse(content);
 
-    // Validate that no reference elements are being animated
-    if (request.referenceElements?.length) {
-      const attemptedReferenceAnimations = result.animations
-        .filter(a => request.referenceElements?.includes(a.elementId));
-
-      if (attemptedReferenceAnimations.length > 0) {
-        throw new Error("Animation attempt on reference elements detected");
-      }
-    }
 
     // Insert the animations into the original SVG
     const animatedSvg = insertAnimations(request.svgContent, result.animations);
