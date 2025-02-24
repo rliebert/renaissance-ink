@@ -3,8 +3,22 @@ import { db } from '../db';
 import { animations, insertAnimationSchema } from '@shared/schema';
 import { generateAnimation } from '../services/openai';
 import { eq } from 'drizzle-orm';
+import { extractSelectedElements } from '../services/openai';
 
 const router = Router();
+
+// Get preview of selected elements
+router.post('/preview', async (req, res) => {
+  try {
+    const { svgContent, selectedElements = [], referenceElements = [] } = req.body;
+    const allElements = [...selectedElements, ...referenceElements];
+    const previewSvg = extractSelectedElements(svgContent, allElements);
+    res.json({ preview: previewSvg });
+  } catch (error) {
+    console.error('Preview generation error:', error);
+    res.status(400).json({ error: 'Failed to generate preview' });
+  }
+});
 
 // Create a new animation
 router.post('/', async (req, res) => {

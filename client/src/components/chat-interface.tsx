@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
@@ -38,6 +38,7 @@ export function ChatInterface({
   selectedElements = [],
   referenceElements = [],
 }: ChatInterfaceProps) {
+  const [previewSvg, setPreviewSvg] = useState<string | null>(null);
   const form = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
@@ -46,6 +47,36 @@ export function ChatInterface({
   });
 
   const [loopAnimation, setLoopAnimation] = useState(true);
+
+  // Fetch selected elements preview
+  useEffect(() => {
+    async function fetchPreview() {
+      if (!originalSvg || (!selectedElements.length && !referenceElements.length)) {
+        setPreviewSvg(null);
+        return;
+      }
+
+      try {
+        const response = await apiRequest("POST", "/api/animations/preview", {
+          svgContent: originalSvg,
+          selectedElements,
+          referenceElements,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate preview');
+        }
+
+        const data = await response.json();
+        setPreviewSvg(data.preview);
+      } catch (error) {
+        console.error('Preview generation error:', error);
+        setPreviewSvg(null);
+      }
+    }
+
+    fetchPreview();
+  }, [originalSvg, selectedElements, referenceElements]);
 
   const onSubmit = (data: MessageFormData) => {
     onSendMessage(data.content, loopAnimation);
@@ -71,11 +102,10 @@ export function ChatInterface({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  const showPreview = originalSvg && (selectedElements.length > 0 || referenceElements.length > 0);
+  const showPreview = previewSvg && (selectedElements.length > 0 || referenceElements.length > 0);
 
   return (
     <Card className="flex flex-col h-[500px] relative">
-      {/* Combined selected elements preview */}
       {showPreview && (
         <div className="absolute top-4 right-4 z-10 bg-background/95 rounded-lg shadow-lg border p-4 w-64">
           <div className="space-y-2">
@@ -101,7 +131,7 @@ export function ChatInterface({
             <div className="aspect-square bg-background rounded-lg">
               <div className="w-full h-full flex items-center justify-center p-2">
                 <SVGPreview
-                  svg={originalSvg}
+                  svg={previewSvg}
                   title=""
                   className="w-full h-full"
                   selectable={false}

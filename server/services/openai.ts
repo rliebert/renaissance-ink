@@ -199,7 +199,7 @@ ${request.parameters ? `Current parameters: ${JSON.stringify(request.parameters)
   }
 }
 
-function extractSelectedElements(svgContent: string, elementIds: string[]): string {
+export function extractSelectedElements(svgContent: string, elementIds: string[]): string {
   const dom = new JSDOM(svgContent);
   const document = dom.window.document;
 
