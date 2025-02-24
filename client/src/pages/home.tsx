@@ -47,7 +47,7 @@ export default function Home() {
       const payload = {
         ...data,
         selectedElements,
-        referenceElements,
+        referenceElements, // Make sure referenceElements are included in the payload
       };
       const response = await apiRequest("POST", "/api/animations", payload);
       if (!response.ok) {

@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
     const animationResult = await generateAnimation({
       svgContent: parsedBody.originalSvg,
       selectedElements: parsedBody.selectedElements || [],
-      referenceElements: parsedBody.referenceElements || [],
+      referenceElements: parsedBody.referenceElements || [], // Pass reference elements
       description: parsedBody.description,
       parameters: parsedBody.parameters
     });
@@ -79,7 +79,7 @@ router.patch('/:id', async (req, res) => {
     const animationResult = await generateAnimation({
       svgContent: existingAnimation.originalSvg,
       selectedElements: existingAnimation.selectedElements || [],
-      referenceElements: existingAnimation.referenceElements || [],
+      referenceElements: existingAnimation.referenceElements || [], // Pass reference elements
       description,
       parameters,
       conversation: existingAnimation.conversation || []

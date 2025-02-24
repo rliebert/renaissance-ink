@@ -42,6 +42,7 @@ export const insertAnimationSchema = createInsertSchema(animations).pick({
   description: true,
 }).extend({
   selectedElements: z.array(z.string()).optional(),
+  referenceElements: z.array(z.string()).optional(),
   parameters: animationParamsSchema.optional(),
 });
 
