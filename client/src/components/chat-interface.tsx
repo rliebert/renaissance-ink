@@ -12,6 +12,7 @@ import type { Message } from "@shared/schema";
 import { SVGPreview } from "./svg-preview";
 import { LoadingIndicator } from "./loading-indicator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { apiRequest } from "@/lib/queryClient";
 
 const messageSchema = z.object({
   content: z.string().min(1, "Please enter a message"),
@@ -24,9 +25,9 @@ interface ChatInterfaceProps {
   onSendMessage: (content: string, loopAnimation?: boolean) => void;
   isLoading?: boolean;
   animatedSvg?: string | null;
-  originalSvg?: string | null;
-  selectedElements?: string[];
-  referenceElements?: string[];
+  originalSvg: string | null;
+  selectedElements: string[];
+  referenceElements: string[];
 }
 
 export function ChatInterface({
