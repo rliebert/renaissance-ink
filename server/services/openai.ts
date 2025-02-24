@@ -54,28 +54,6 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
   return document.querySelector('svg')?.outerHTML || '';
 }
 
-// Helper function to get element details including coordinates, transforms, and center point
-function getElementDetails(document: Document, id: string): string {
-  const element = document.getElementById(id);
-  if (!element) return id;
-
-  const tag = element.tagName.toLowerCase();
-  const bbox = element.getBBox?.() || {};
-  const cx = bbox.x !== undefined ? bbox.x + bbox.width / 2 : element.getAttribute('cx');
-  const cy = bbox.y !== undefined ? bbox.y + bbox.height / 2 : element.getAttribute('cy');
-  const transform = element.getAttribute('transform') || '';
-  const path = element.getAttribute('d');
-
-  // Create detailed debug info
-  let details = `#${id} (${tag}`;
-  if (cx !== null && cy !== null) details += ` center=(${cx},${cy})`;
-  if (transform) details += `, transform=${transform}`;
-  if (path) details += `, path data available`;
-  details += ')';
-
-  return details;
-}
-
 export function extractSelectedElements(svgContent: string, elementIds: string[]): { svg: string; debug: string } {
   const dom = new JSDOM(svgContent);
   const document = dom.window.document;
@@ -84,25 +62,12 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   const originalSvg = document.querySelector('svg');
   if (!originalSvg) throw new Error("Invalid SVG: no svg element found");
 
-  // Create debug info with element center points
+  // Create debug info
   const debug = {
     originalViewBox: originalSvg.getAttribute('viewBox'),
     originalWidth: originalSvg.getAttribute('width'),
     originalHeight: originalSvg.getAttribute('height'),
-    selectedElements: elementIds.map(id => {
-      const element = document.getElementById(id);
-      const bbox = element?.getBBox?.() || {};
-      return {
-        id,
-        tag: element?.tagName.toLowerCase(),
-        center: {
-          x: bbox.x !== undefined ? bbox.x + bbox.width / 2 : element?.getAttribute('cx'),
-          y: bbox.y !== undefined ? bbox.y + bbox.height / 2 : element?.getAttribute('cy'),
-        },
-        transform: element?.getAttribute('transform'),
-        path: element?.getAttribute('d'),
-      };
-    }),
+    elementIds,
   };
 
   // Create a new minimal SVG with only selected elements
@@ -112,7 +77,7 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   if (debug.originalWidth) minimalSvg.setAttribute('width', debug.originalWidth);
   if (debug.originalHeight) minimalSvg.setAttribute('height', debug.originalHeight);
 
-  // Copy selected elements with their coordinates and transforms preserved
+  // Copy selected elements
   for (const id of elementIds) {
     const element = document.getElementById(id);
     if (element) {
@@ -157,32 +122,9 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
 
 export async function generateAnimation(request: AnimationRequest): Promise<AnimationResponse> {
   try {
-    const dom = new JSDOM(request.svgContent);
-    const document = dom.window.document;
-
-    // Get detailed element information including center points
-    const elementsToAnimate = request.selectedElements
-      .map(id => getElementDetails(document, id))
-      .join(', ');
-
-    const referencePoints = request.referenceElements?.length 
-      ? `\nReference points: ${request.referenceElements.map(id => getElementDetails(document, id)).join(', ')}`
-      : '';
-
     // Get simplified SVG with debug info
     const { svg: simplifiedSvg, debug: debugInfo } = extractSelectedElements(request.svgContent, 
       [...request.selectedElements, ...(request.referenceElements || [])]);
-
-    console.log('Animation Generation Debug:', {
-      selectedElements: request.selectedElements,
-      referenceElements: request.referenceElements,
-      simplifiedSvgInfo: debugInfo,
-      prompt: {
-        elementsToAnimate,
-        referencePoints,
-        description: request.description
-      }
-    });
 
     // Include previous conversation context
     const conversationContext = request.conversation?.map(msg => ({
@@ -193,15 +135,9 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
     const messages = [
       {
         role: "system",
-        content: `You are an expert in SVG SMIL animations. Generate precise animations that maintain spatial relationships.
+        content: `You are an expert in SVG SMIL animations. Generate animations based on the following rules:
 
-Requirements:
-1. Return a JSON object containing animation elements
-2. Use relative coordinates when animating with reference points
-3. Keep transforms and coordinate systems consistent
-4. When rotating elements around a reference point, use that point's center as the transform origin
-
-Return format:
+1. Return a JSON object with the following format:
 {
   "animations": [
     {
@@ -221,19 +157,20 @@ Return format:
       ...conversationContext,
       {
         role: "user",
-        content: `Create animations for these elements (${elementsToAnimate})${referencePoints}
+        content: `Create animations for these elements: ${request.selectedElements.join(', ')}
 Description: "${request.description}"
 
-Reference points should be used as anchors for animations (e.g. as rotation centers) but should not be animated themselves.
+Elements that should NOT be animated: ${request.referenceElements?.join(', ') || 'none'}
 
 ${simplifiedSvg}`
       }
     ];
 
     console.log('OpenAI Request:', {
-      model: "gpt-4o",
-      messages,
-      response_format: { type: "json_object" }
+      selectedElements: request.selectedElements,
+      referenceElements: request.referenceElements,
+      description: request.description,
+      debugInfo
     });
 
     const response = await openai.chat.completions.create({
@@ -247,24 +184,14 @@ ${simplifiedSvg}`
       throw new Error("No content received from OpenAI");
     }
 
-    console.log('OpenAI Response:', {
-      content,
-      usage: response.usage,
-      model: response.model
-    });
-
     const result = JSON.parse(content);
 
     // Insert the animations into the original SVG
     const animatedSvg = insertAnimations(request.svgContent, result.animations);
 
-    console.log('Generated Animated SVG:', {
-      originalLength: request.svgContent.length,
-      animatedLength: animatedSvg.length,
-      addedAnimations: result.animations.map(a => ({ 
-        elementId: a.elementId, 
-        numAnimations: a.animations.length 
-      }))
+    console.log('Animation Generation Result:', {
+      numAnimations: result.animations.length,
+      explanation: result.explanation
     });
 
     return {
