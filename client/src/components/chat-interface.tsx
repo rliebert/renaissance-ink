@@ -80,7 +80,7 @@ export function ChatInterface({
                 {previewSvg && (
                   <div className="flex items-center gap-1">
                     <div className="h-2 w-2 bg-primary rounded-full animate-pulse"/>
-                    <p className="text-xs text-muted-foreground">Selected</p>
+                    <p className="text-xs text-muted-foreground">To animate</p>
                   </div>
                 )}
                 {previewSvg && referenceSvg && (
@@ -97,11 +97,11 @@ export function ChatInterface({
             <div className="aspect-square bg-background rounded-lg">
               <div className="w-full h-full flex items-center justify-center p-2">
                 <SVGPreview
-                  svg={previewSvg || referenceSvg}
+                  svg={previewSvg}
                   title=""
                   className="w-full h-full"
                   selectable={false}
-                  selectedElements={[]}
+                  selectedElements={previewSvg ? ['all'] : []}
                   referenceElements={referenceSvg ? ['all'] : []}
                 />
               </div>
