@@ -58,7 +58,6 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
   const dom = new JSDOM(svgContent);
   const document = dom.window.document;
 
-  // Extract viewBox and other necessary attributes from original SVG
   const originalSvg = document.querySelector('svg');
   if (!originalSvg) throw new Error("Invalid SVG: no svg element found");
 
@@ -67,7 +66,7 @@ export function extractSelectedElements(svgContent: string, elementIds: string[]
     originalViewBox: originalSvg.getAttribute('viewBox'),
     originalWidth: originalSvg.getAttribute('width'),
     originalHeight: originalSvg.getAttribute('height'),
-    elementIds,
+    elementIds
   };
 
   // Create a new minimal SVG with only selected elements
@@ -135,9 +134,9 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
     const messages = [
       {
         role: "system",
-        content: `You are an expert in SVG SMIL animations. Generate animations based on the following rules:
+        content: `You are an expert in SVG SMIL animations. Generate animations based on these rules:
 
-1. Return a JSON object with the following format:
+1. Return a JSON object with this format:
 {
   "animations": [
     {
@@ -157,10 +156,10 @@ export async function generateAnimation(request: AnimationRequest): Promise<Anim
       ...conversationContext,
       {
         role: "user",
-        content: `Create animations for these elements: ${request.selectedElements.join(', ')}
+        content: `Animate the following elements: ${request.selectedElements.join(', ')}
 Description: "${request.description}"
 
-Elements that should NOT be animated: ${request.referenceElements?.join(', ') || 'none'}
+The following elements should remain static: ${request.referenceElements?.join(', ') || 'none'}
 
 ${simplifiedSvg}`
       }
