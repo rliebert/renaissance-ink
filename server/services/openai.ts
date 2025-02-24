@@ -29,7 +29,7 @@ interface AnimationElement {
   animations: string[];  // Array of SMIL animation elements to be added
 }
 
-function insertAnimations(svgContent: string, animationElements: AnimationElement[]): string {
+function insertAnimations(svgContent: string, animationElements: AnimationElement[], loop: boolean = true): string {
   const dom = new JSDOM(svgContent);
   const document = dom.window.document;
 
@@ -51,7 +51,19 @@ function insertAnimations(svgContent: string, animationElements: AnimationElemen
       for (const animation of animations) {
         const template = document.createElement('template');
         template.innerHTML = animation.trim();
-        element.appendChild(template.content.firstChild!);
+        const animationElement = template.content.firstChild as Element;
+
+        // Set repeatCount based on loop parameter
+        if (loop) {
+          animationElement.setAttribute('repeatCount', 'indefinite');
+        } else {
+          // Remove any existing repeatCount or set it to "1"
+          if (animationElement.hasAttribute('repeatCount')) {
+            animationElement.setAttribute('repeatCount', '1');
+          }
+        }
+
+        element.appendChild(animationElement);
       }
     }
   }
@@ -209,8 +221,8 @@ ${simplifiedSvg}`
 
     const result = JSON.parse(content);
 
-    // Insert the animations into the original SVG
-    const animatedSvg = insertAnimations(request.svgContent, result.animations);
+    // Insert the animations into the original SVG, passing the loop parameter
+    const animatedSvg = insertAnimations(request.svgContent, result.animations, request.loop);
 
     console.log('Animation Generation Result:', {
       numAnimations: result.animations.length,
