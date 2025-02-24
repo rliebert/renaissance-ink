@@ -176,7 +176,7 @@ export function SVGPreview({
             <p className="text-sm text-muted-foreground">
               {selectionMode === 'animate'
                 ? "Click on elements to select them for animation"
-                : "Click on elements to add reference points"}
+                : "Click on reference elements (will not animate)"}
             </p>
           )}
         </div>

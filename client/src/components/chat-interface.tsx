@@ -289,19 +289,6 @@ export function ChatInterface({
                 </FormItem>
               )}
             />
-            <div className="flex items-center space-x-2 mb-2">
-              <Checkbox 
-                id="loopAnimation"
-                checked={loopAnimation}
-                onCheckedChange={(checked) => setLoopAnimation(checked as boolean)}
-              />
-              <label
-                htmlFor="loopAnimation"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Loop Animation
-              </label>
-            </div>
             <Button
               type="submit"
               className="w-full"
