@@ -6,13 +6,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Download, ExternalLink } from "lucide-react";
+import { Send, Download, ExternalLink, Copy } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import type { Message } from "@shared/schema";
 import { SVGPreview } from "./svg-preview";
 import { LoadingIndicator } from "./loading-indicator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/queryClient";
+
 
 const messageSchema = z.object({
   content: z.string().min(1, "Please enter a message"),
@@ -103,6 +105,21 @@ export function ChatInterface({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const handleCopySvg = async (svg: string) => {
+    try {
+      await navigator.clipboard.writeText(svg);
+      toast({
+        description: "SVG code copied to clipboard",
+      });
+    } catch (error) {
+      console.error('Failed to copy SVG:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to copy SVG code",
+      });
+    }
+  };
+
   const showPreview = previewSvg && (selectedElements.length > 0 || referenceElements.length > 0);
 
   return (
@@ -110,7 +127,7 @@ export function ChatInterface({
       {showPreview && (
         <div className="absolute top-4 right-4 z-10 bg-background/95 rounded-lg shadow-lg border p-4 w-64">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex gap-2">
                 {selectedElements.length > 0 && (
                   <div className="flex items-center gap-1">
@@ -128,6 +145,15 @@ export function ChatInterface({
                   </div>
                 )}
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => handleCopySvg(previewSvg!)}
+                title="Copy SVG code"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
             <div className="aspect-square bg-background rounded-lg">
               <div className="w-full h-full flex items-center justify-center p-2">
